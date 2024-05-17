@@ -8,6 +8,8 @@
    #:variable-p
    #:variable-name
    #:same-variable-p
+   #:make-variable-name-generator
+   #:generate-name
    #:application
    #:application-p
    #:application-left
@@ -16,6 +18,8 @@
    #:print-term
    #:term-equal
    #:reduce-term
+   #:combinator-term
+   #:combinator-term-p
    #:combinator
    #:combinator-p
    #:combinator-name

@@ -124,11 +124,9 @@ combinators."
                       (eliminate (application-left term) var))
                      (eliminate (application-right term) var))))))
     (let* ((arity (combinator-arity combinator))
-           (vars (loop for c from #.(char-code #\a) to #.(char-code #\z)
+           (vars (loop with g = (make-variable-name-generator)
                        repeat arity
-                       collect (make-combinator-variable (code-char c)))))
-      (unless (= arity (length vars))
-        (error "Arity of combinator ~A is too high!" combinator))
+                       collect (make-combinator-variable (generate-name g)))))
       (let ((term (reduce-term
                    (reduce #'make-combinator-application
                            vars

@@ -43,7 +43,8 @@ application of the LEFT term to the RIGHT term."
 
 (defun make-combinator-variable (name)
   "Construct and return a COMBINATOR-VARIABLE with name NAME."
-  (make-instance 'combinator-variable :name name))
+  (let ((name (if (atom name) (list name) name)))
+    (make-instance 'combinator-variable :name name)))
 
 (defun combinator-variable-p (object)
   "Return true if OBJECT is a COMBINATOR-VARIABLE, and NIL otherwise."
@@ -68,11 +69,6 @@ application of the LEFT term to the RIGHT term."
 (defmethod print-term ((term combinator)
                        &optional (stream *standard-output*))
   (format stream "~A" (combinator-name term))
-  term)
-
-(defmethod print-term ((term combinator-variable)
-                       &optional (stream *standard-output*))
-  (format stream "~A" (variable-name term))
   term)
 
 (defmethod print-term ((term combinator-application)

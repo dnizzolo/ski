@@ -161,19 +161,20 @@
 (define-test combinator->ski-test
   :depends-on (parse-combinator-term-test)
   (macrolet ((is-ski (combinator)
-               `(is term-equal
-                    (reduce-term
-                     (reduce #'make-combinator-application
-                             (loop for c from #.(char-code #\a) to #.(char-code #\z)
-                                   repeat (combinator-arity (get-combinator ,combinator))
-                                   collect (make-combinator-variable (code-char c)))
-                             :initial-value (get-combinator ,combinator)))
-                    (reduce-term
-                     (reduce #'make-combinator-application
-                             (loop for c from #.(char-code #\a) to #.(char-code #\z)
-                                   repeat (combinator-arity (get-combinator ,combinator))
-                                   collect (make-combinator-variable (code-char c)))
-                             :initial-value (combinator->ski (get-combinator ,combinator)))))))
+               (let ((collect-variables-form
+                       `(loop with g = (make-variable-name-generator)
+                              repeat (combinator-arity (get-combinator ,combinator))
+                              collect (make-combinator-variable (generate-name g)))))
+                 `(is term-equal
+                      (reduce-term
+                       (reduce #'make-combinator-application
+                               ,collect-variables-form
+                               :initial-value (get-combinator ,combinator)))
+                      (reduce-term
+                       (reduce #'make-combinator-application
+                               ,collect-variables-form
+                               :initial-value (combinator->ski
+                                               (get-combinator ,combinator))))))))
     (is-ski 'B)
     (is-ski 'C)
     (is-ski 'W)

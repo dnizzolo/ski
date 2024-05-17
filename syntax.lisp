@@ -7,6 +7,19 @@
     (* (or #\Space #\Newline #\Tab))
   (:constant nil))
 
+(esrap:defrule variable
+    (and whitespace*
+         (or (esrap:character-ranges (#\a #\z))
+             (and "{"
+                  whitespace*
+                  (+ (esrap:character-ranges (#\a #\z)))
+                  whitespace*
+                  "}"))
+         whitespace*)
+  (:destructure (w1 var w2)
+    (declare (ignore w1 w2))
+    (if (atom var) var (third var))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Combinatory logic grammar.
 
@@ -70,12 +83,8 @@
     (get-combinator (intern (string combinator)))))
 
 (esrap:defrule combinator-variable
-    (and whitespace*
-         (esrap:character-ranges (#\a #\z))
-         whitespace*)
-  (:destructure (w1 variable w2)
-    (declare (ignore w1 w2))
-    (make-combinator-variable variable)))
+    variable
+  (:function make-combinator-variable))
 
 (esrap:defrule combinator-application
     (and combinator-term (or combinator combinator-variable combinator-term))
@@ -93,6 +102,7 @@
     term))
 
 (defun parse-combinator-term (input)
+  "Parse a COMBINATOR-TERM from the string INPUT and return it."
   (esrap:parse 'combinator-term input))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,12 +138,8 @@
             :from-end t)))
 
 (esrap:defrule lambda-variable
-    (and whitespace*
-         (esrap:character-ranges (#\a #\z))
-         whitespace*)
-  (:destructure (w1 variable w2)
-    (declare (ignore w1 w2))
-    (make-lambda-variable variable)))
+    variable
+  (:function make-lambda-variable))
 
 (esrap:defrule parenthesized-lambda-term
     (and whitespace*
@@ -146,4 +152,5 @@
     term))
 
 (defun parse-lambda-term (input)
+  "Parse a LAMBDA-TERM from the string INPUT and return it."
   (esrap:parse 'lambda-term input))

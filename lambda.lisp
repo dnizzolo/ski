@@ -43,7 +43,8 @@ application of the LEFT term to the RIGHT term."
 
 (defun make-lambda-variable (name)
   "Construct and return a LAMBDA-VARIABLE called NAME."
-  (make-instance 'lambda-variable :name name))
+  (let ((name (if (atom name) (list name) name)))
+    (make-instance 'lambda-variable :name name)))
 
 (defun lambda-variable-p (object)
   "Return true if OBJECT is a LAMBDA-VARIABLE, and NIL otherwise."
@@ -70,11 +71,6 @@ application of the LEFT term to the RIGHT term."
     (with-accessors ((left2 application-left) (right2 application-right)) term2
       (and (term-equal left1 left2)
            (term-equal right1 right2)))))
-
-(defmethod print-term ((term lambda-variable)
-                       &optional (stream *standard-output*))
-  (write-char (variable-name term) stream)
-  term)
 
 (defmethod print-term ((term lambda-abstraction)
                        &optional (stream *standard-output*))
@@ -165,16 +161,13 @@ TERM have been replaced with REPLACEMENT without capturing other variables while
                                         (target lambda-variable)
                                         (replacement lambda-term))
   (flet ((fresh-variable (t1 t2)
-           (let ((forbidden-names
-                   (mapcar #'variable-name
-                           (union (free-variables t1)
-                                  (free-variables t2)
-                                  :test #'same-variable-p))))
-             (loop for code from #.(char-code #\a) to #.(char-code #\z)
-                   for name = (code-char code)
-                   unless (member name forbidden-names)
-                     return (make-lambda-variable name)
-                   finally (error "Ran out of variable names!")))))
+           (let ((forbidden (union (free-variables t1)
+                                   (free-variables t2)
+                                   :test #'same-variable-p)))
+             (loop with g = (make-variable-name-generator)
+                   for var = (make-lambda-variable (generate-name g))
+                   unless (member var forbidden :test #'same-variable-p)
+                     return var))))
     (with-accessors ((variable lambda-abstraction-variable)
                      (body lambda-abstraction-body))
         term
