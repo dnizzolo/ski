@@ -1,6 +1,6 @@
 LISP = sbcl
 
-ski:
+bin/ski:
 	mkdir -p bin/
 	$(LISP) --eval '(asdf:load-system :ski)' \
 		--eval '(in-package :ski)' \
@@ -9,3 +9,8 @@ ski:
 .PHONY: clean
 clean:
 	rm -rf bin/
+
+.PHONY: test
+test:
+	$(LISP) --non-interactive \
+		--eval '(asdf:test-system :ski)'
