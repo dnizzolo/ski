@@ -11,13 +11,9 @@
     (term-equal
      (make-combinator-application (make-combinator-application z y) x)
      (reduce-term
-      (make-combinator-application
-       (make-combinator-application
-        (make-combinator-application
-         term
-         x)
-        y)
-       z)))))
+      (reduce #'make-combinator-application
+              (list x y z)
+              :initial-value term)))))
 
 (defun solve ()
   (loop with set = (list (get-combinator 'B) (get-combinator 'T))

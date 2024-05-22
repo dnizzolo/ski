@@ -11,13 +11,9 @@
     (term-equal
      (make-combinator-application (make-combinator-application y z) x)
      (reduce-term
-      (make-combinator-application
-       (make-combinator-application
-        (make-combinator-application
-         term
-         x)
-        y)
-       z)))))
+      (reduce #'make-combinator-application
+              (list x y z)
+              :initial-value term)))))
 
 (defun solve ()
   (loop for n from 1

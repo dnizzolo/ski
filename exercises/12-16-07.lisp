@@ -12,17 +12,14 @@
      (make-combinator-application
       (make-combinator-application x z)
       (make-combinator-application y z))
-     (reduce-term (make-combinator-application
-                   (make-combinator-application
-                    (make-combinator-application
-                     (make-combinator-application
-                      (make-combinator-application
-                       (get-combinator 'C)
-                       candidate)
-                      (get-combinator 'W))
-                     x)
-                    y)
-                   z)))))
+     (reduce-term
+      (reduce #'make-combinator-application
+              (list x y z)
+              :initial-value (make-combinator-application
+                              (make-combinator-application
+                               (get-combinator 'C)
+                               candidate)
+                              (get-combinator 'W)))))))
 
 (defun solve ()
   (let ((solutions (remove-if-not

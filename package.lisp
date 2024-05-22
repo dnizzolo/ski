@@ -18,6 +18,7 @@
    #:print-term
    #:term-equal
    #:reduce-term
+   #:driver-loop
    #:combinator-term
    #:combinator-term-p
    #:combinator

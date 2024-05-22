@@ -63,6 +63,7 @@ S(K(SI))(SII)
 * `print-term` - print a parsable representation of a term.
 * `term-equal` - check if two terms are equal.
 * `reduce-term` - reduce a term to its beta normal form.
+* `driver-loop` - a REPL for combinatory logic.
 * `combinator-term` - base class for combinatory logic terms.
 * `combinator-term-p` - check if an object is a combinatory logic term.
 * `combinator` - class for a combinator in combinatory logic.
@@ -95,6 +96,15 @@ S(K(SI))(SII)
 * `parse-lambda-term` - parse a lambda calculus term from a string.
 
 All symbols associated with combinators are exported.
+
+## Exercises
+
+I brute-forced some exercises by generating all possible full binary
+trees with `n` leaves for increasing `n`, replacing the leaves with
+combinators and reducing the obtained term to see if it satisfies the
+exercise requirement. This approach doesn't usually work however
+because it often gets stuck in an infinite loop trying to reduce a
+term that doesn't have a normal form.
 
 ## Tests
 

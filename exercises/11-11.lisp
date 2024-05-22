@@ -11,19 +11,14 @@
         (w (make-combinator-variable #\w))
         (v (make-combinator-variable #\v)))
     (term-equal
-     (reduce-term (parse-combinator-term "D2xyzwv"))
      (reduce-term
-      (make-combinator-application
-       (make-combinator-application
-        (make-combinator-application
-         (make-combinator-application
-          (make-combinator-application
-           term
-           x)
-          y)
-         z)
-        w)
-       v)))))
+      (reduce #'make-combinator-application
+              (list x y z w v)
+              :initial-value (get-combinator 'D2)))
+     (reduce-term
+      (reduce #'make-combinator-application
+              (list x y z w v)
+              :initial-value term)))))
 
 (defun solve ()
   (loop for n from 1

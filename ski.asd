@@ -23,6 +23,7 @@
                              (:file "12-05")
                              (:file "12-12")
                              (:file "12-16")
+                             (:file "12-16-01")
                              (:file "12-16-07"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:ski/test))))
 

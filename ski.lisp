@@ -115,6 +115,22 @@ terms. Return the new term and the new stack."))
                               (reduce-term stacked))))
     curr-term))
 
+(defun driver-loop ()
+  "A REPL for combinatory logic."
+  (flet ((prompt-for-input ()
+           (format t "~&%%% ")
+           (finish-output)
+           (read-line t nil))
+         (drive (input)
+           (print-term (reduce-term (parse-combinator-term input)))))
+  (loop
+    (let ((input (prompt-for-input)))
+      (cond ((null input) (return))
+            ((zerop (length input)))
+            (t (handler-case (drive input)
+                 (esrap:esrap-parse-error ()
+                   (format t "~&Parse error")))))))))
+
 (defparameter *combinators* (make-hash-table)
   "The table of interned combinators.")
 
