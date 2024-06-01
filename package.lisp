@@ -44,13 +44,16 @@
    #:free-variables
    #:bound-variables
    #:substitute-avoiding-capture
-   #:churchify
-   #:dechurchify
+   #:lambda-combinator-p
+   #:natural->church
+   #:church->natural
    #:combinator->ski
    #:lambda->ski
    #:lambda->sk
    #:parse-combinator-term
    #:parse-lambda-term
+   #:build-lambda-program
+   #:run-lambda-program
    #:S
    #:S1
    #:K

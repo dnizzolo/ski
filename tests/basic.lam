@@ -1,0 +1,9 @@
+TRUE = λxy.x;
+FALSE = λxy.y;
+ISZERO = λn.n(TRUE FALSE)TRUE;
+
+ZERO = λfx.x;
+ONE = λfx.fx;
+TWO = λfx.f(fx);
+
+ISZERO ONE;

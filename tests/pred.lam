@@ -1,0 +1,16 @@
+TRUE = λxy.x;
+FALSE = λxy.y;
+
+PAIR = λxy.λs.sxy;
+
+FST = λp.p TRUE;
+SND = λp.p FALSE;
+
+ZERO = λfx.x;
+SUCC = λn.λfx.f(nfx);
+
+SHIFT = λx.PAIR (SND x) (SUCC (SND x));
+
+PRED = λn.FST (n SHIFT (PAIR ZERO ZERO));
+
+PRED (SUCC (SUCC (SUCC (SUCC (SUCC ZERO)))));

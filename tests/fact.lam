@@ -1,0 +1,18 @@
+ZERO = λfx.x;
+ONE = λfx.fx;
+TWO = λfx.f(fx);
+THREE = λfx.f(f(fx));
+FOUR = λfx.f(f(f(fx)));
+FIVE = λfx.f(f(f(f(fx))));
+
+T = λxy.x;
+F = λxy.y;
+ISZERO = λn.n(T F)T;
+PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
+MULT = λnm.λf.n(mf);
+
+G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));
+Y = (λxy.y(xxy)) (λxy.y(xxy));
+FACT = Y G;
+
+FACT FIVE;

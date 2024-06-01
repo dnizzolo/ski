@@ -5,10 +5,10 @@
   :depends-on (#:esrap)
   :components ((:file "package")
                (:file "base")
-               (:file "syntax")
                (:file "ski")
                (:file "lambda")
                (:file "transformations")
+               (:file "syntax")
                (:module "exercises"
                 :components ((:file "utils")
                              (:file "11-06")

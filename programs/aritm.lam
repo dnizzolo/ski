@@ -1,0 +1,13 @@
+ZERO = λfx.x;
+ONE = λfx.fx;
+TWO = λfx.f(fx);
+FOUR = λfx.f(f(f(fx)));
+
+SUCC = λn.λfx.f(nfx);
+ADD = λnm.λfx.nf(mfx);
+MULT = λnm.λf.n(mf);
+
+SUCC TWO;
+SUCC FOUR;
+MULT TWO FOUR;
+MULT(MULT(TWO)(FOUR))(SUCC(FOUR));

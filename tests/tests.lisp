@@ -218,15 +218,29 @@
 
 (define-test church-numerals-test
   :depends-on (parse-lambda-term-test)
-  (is term-equal (parse-lambda-term "λfx.x") (churchify 0))
-  (is term-equal (parse-lambda-term "λfx.fx") (churchify 1))
-  (is term-equal (parse-lambda-term "λfx.f(fx)") (churchify 2))
-  (is term-equal (parse-lambda-term "λfx.f(f(fx))") (churchify 3))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(fx)))") (churchify 4))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(fx))))))") (churchify 7))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(f(fx)))))))))))") (churchify 12))
-  (is = 0 (dechurchify (parse-lambda-term "λfx.x")))
-  (is = 1 (dechurchify (parse-lambda-term "λfx.fx")))
-  (is = 3 (dechurchify (parse-lambda-term "λfx.f(f(fx))")))
-  (is = 8 (dechurchify (parse-lambda-term "λfx.f(f(f(f(f(f(f(fx)))))))")))
-  (is = 11 (dechurchify (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(fx))))))))))"))))
+  (is term-equal (parse-lambda-term "λfx.x") (natural->church 0))
+  (is term-equal (parse-lambda-term "λfx.fx") (natural->church 1))
+  (is term-equal (parse-lambda-term "λfx.f(fx)") (natural->church 2))
+  (is term-equal (parse-lambda-term "λfx.f(f(fx))") (natural->church 3))
+  (is term-equal (parse-lambda-term "λfx.f(f(f(fx)))") (natural->church 4))
+  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(fx))))))") (natural->church 7))
+  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(f(fx)))))))))))") (natural->church 12))
+  (is = 0 (church->natural (parse-lambda-term "λfx.x")))
+  (is = 1 (church->natural (parse-lambda-term "λfx.fx")))
+  (is = 3 (church->natural (parse-lambda-term "λfx.f(f(fx))")))
+  (is = 8 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(fx)))))))")))
+  (is = 11 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(fx))))))))))"))))
+
+(define-test lambda-programs-test
+  :depends-on (parse-lambda-term-test
+               lambda-reduction-test
+               church-numerals-test)
+  (macrolet ((lambda-program-result (path)
+               `(run-lambda-program
+                 (asdf:system-relative-pathname
+                  :ski (merge-pathnames #p"tests/" ,path))
+                 (make-broadcast-stream))))
+    (is term-equal (natural->church 120) (lambda-program-result #p"fact.lam"))
+    (is term-equal (natural->church 40) (lambda-program-result #p"aritm.lam"))
+    (is term-equal (natural->church 4) (lambda-program-result #p"pred.lam"))
+    (is term-equal (parse-lambda-term "λxy.y") (lambda-program-result #p"basic.lam"))))

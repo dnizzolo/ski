@@ -26,7 +26,7 @@
       (format stream "(~A)" name))))
 
 (defclass combinator-application (application combinator-term) ()
-  (:documentation "An application for combinatory logic terms."))
+  (:documentation "An application of combinatory logic terms."))
 
 (defun make-combinator-application (left right)
   "Construct and return a COMBINATOR-APPLICATION that represents the
@@ -88,7 +88,7 @@ application of the LEFT term to the RIGHT term."
 
 (defgeneric step-combinator-term (term stack)
   (:documentation "Perform a step in the reduction of TERM, given the STACK of deferred
-terms. Return the new term and the new stack."))
+terms. Return the new term and the new stack as multiple values."))
 
 (defmethod step-combinator-term ((term combinator) (stack list))
   (values term stack))
@@ -101,18 +101,19 @@ terms. Return the new term and the new stack."))
     (values left (cons right stack))))
 
 (defmethod reduce-term ((term combinator-term))
-  (let ((next-term nil) (next-stack nil)
-        (curr-term term) (curr-stack nil))
-    (loop do (multiple-value-setq (next-term next-stack)
-               (step-combinator-term curr-term curr-stack))
-          until (and (eql curr-term next-term)
-                     (eql curr-stack next-stack))
-          do (setf curr-term next-term
-                   curr-stack next-stack))
-    (loop for stacked in curr-stack
-          do (setf curr-term (make-combinator-application
-                              curr-term
-                              (reduce-term stacked))))
+  (let ((curr-term term) (curr-stack nil))
+    (loop
+      (multiple-value-bind (next-term next-stack)
+          (step-combinator-term curr-term curr-stack)
+        (when (and (eql curr-term next-term)
+                   (eql curr-stack next-stack))
+          (return))
+        (setf curr-term next-term
+              curr-stack next-stack)))
+    (dolist (stacked curr-stack)
+      (setf curr-term (make-combinator-application
+                       curr-term
+                       (reduce-term stacked))))
     curr-term))
 
 (defun driver-loop ()
@@ -143,8 +144,8 @@ terms. Return the new term and the new stack."))
   (setf (gethash name *combinators*) combinator))
 
 (defmacro define-combinator (name variables definition)
-  "Define a new combinator called NAME that takes VARIABLES as arguments
-and transforms its input as describe by DEFINITION."
+  "Define a new combinator called NAME that takes VARIABLES as parameters
+and whose definition is DEFINITION."
   (let ((arity (length variables)))
     `(progn
        (intern-combinator ',name (make-combinator ',name ,arity))
