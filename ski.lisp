@@ -13,7 +13,7 @@
   (:documentation "A combinator in combinatory logic."))
 
 (defun make-combinator (name arity)
-  "Construct and return a COMBINATOR with name NAME and arity ARITY."
+  "Construct and return a COMBINATOR called NAME with ARITY."
   (make-instance 'combinator :name name :arity arity))
 
 (defun combinator-p (object)
@@ -42,7 +42,7 @@ application of the LEFT term to the RIGHT term."
   (:documentation "A variable for combinatory logic."))
 
 (defun make-combinator-variable (name)
-  "Construct and return a COMBINATOR-VARIABLE with name NAME."
+  "Construct and return a COMBINATOR-VARIABLE."
   (let ((name (if (atom name) (list name) name)))
     (make-instance 'combinator-variable :name name)))
 
@@ -136,19 +136,19 @@ terms. Return the new term and the new stack as multiple values."))
   "The table of interned combinators.")
 
 (defun get-combinator (name)
-  "Return the combinator whose name is NAME, and NIL if it doesn't exist."
+  "Return the combinator called NAME, or NIL if it doesn't exist."
   (gethash name *combinators*))
 
-(defun intern-combinator (name combinator)
-  "Store a combinator under the name NAME."
-  (setf (gethash name *combinators*) combinator))
+(defun intern-combinator (combinator)
+  "Store a combinator."
+  (setf (gethash (combinator-name combinator) *combinators*) combinator))
 
 (defmacro define-combinator (name variables definition)
   "Define a new combinator called NAME that takes VARIABLES as parameters
 and whose definition is DEFINITION."
   (let ((arity (length variables)))
     `(progn
-       (intern-combinator ',name (make-combinator ',name ,arity))
+       (intern-combinator (make-combinator ',name ,arity))
        ,(expand-step-combinator-method name arity variables definition))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

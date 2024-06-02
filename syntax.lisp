@@ -232,7 +232,7 @@
   (parse-lambda-program (uiop:read-file-string input)))
 
 (defgeneric lambda-names (term)
-  (:documentation "Return all unresolved names in TERM."))
+  (:documentation "Return all unresolved names in the lambda calculus TERM."))
 
 (defmethod lambda-names ((term string))
   (list term))
@@ -248,8 +248,8 @@
           (lambda-names (application-right term))))
 
 (defgeneric substitute-definitions (definitions term)
-  (:documentation "Recursively replace all occurrences of names in TERM with their
-definition in DEFINITIONS."))
+  (:documentation "Recursively replace all occurrences of names in the lambda calculus
+TERM with their definition in DEFINITIONS."))
 
 (defmethod substitute-definitions (definitions (term lambda-variable))
   term)

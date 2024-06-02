@@ -10,8 +10,8 @@ This system is meant to be used to play around with combinatory logic
 and lambda calculus. You can parse terms from strings with the usual
 grammar and perform operations on them such as reduction or
 translations from a system to another. In order to make lambda
-calculus easier to handle, the system can parse and evaluate a lambda
-program.
+calculus easier to handle, the system can parse and evaluate lambda
+programs.
 
 ## Examples
 

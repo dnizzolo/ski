@@ -1,8 +1,7 @@
 (in-package #:ski)
 
 (defgeneric lambda->ski (term)
-  (:documentation "Convert TERM to its corresponding COMBINATOR-TERM which uses only the
-S, K and I combinators."))
+  (:documentation "Convert a lambda calculus TERM to its corresponding SKI calculus term."))
 
 (defmethod lambda->ski ((term (eql (get-combinator 'S))))
   term)
@@ -53,8 +52,7 @@ S, K and I combinators."))
                   (lambda->ski (make-lambda-abstraction variable right)))))))))
 
 (defgeneric lambda->sk (term)
-  (:documentation "Convert TERM to its corresponding COMBINATOR-TERM which uses only the
-S and K combinators."))
+  (:documentation "Convert a lambda calculus TERM to its corresponding SK calculus term."))
 
 (defmethod lambda->sk ((term (eql (get-combinator 'S))))
   term)
@@ -106,8 +104,7 @@ S and K combinators."))
                   (lambda->sk (make-lambda-abstraction variable right)))))))))
 
 (defun combinator->ski (combinator)
-  "Return a term equivalent to COMBINATOR using only the S, K and I
-combinators."
+  "Return a SKI calculus term equivalent to COMBINATOR."
   (labels ((eliminate (term var)
              (cond ((term-equal var term)
                     (get-combinator 'I))

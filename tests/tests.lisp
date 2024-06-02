@@ -191,8 +191,23 @@
     (is-ski 'L)
     (is-ski 'F)))
 
-(define-test lambda-reduction-test
+(define-test lambda-equality-test
   :depends-on (parse-lambda-term-test)
+  (macrolet ((expect-lambda-equal (comp term1 term2)
+               `(,comp (term-equal (parse-lambda-term ,term1)
+                                   (parse-lambda-term ,term2)))))
+    (expect-lambda-equal true "λx.x" "λx.x")
+    (expect-lambda-equal true "λx.a" "λy.a")
+    (expect-lambda-equal true "b" "b")
+    (expect-lambda-equal false "a" "b")
+    (expect-lambda-equal false "λx.x" "λy.x")
+    (expect-lambda-equal true "(λx.x)a" "(λy.y)a")
+    (expect-lambda-equal true "λfx.f(f(fx))" "λgy.g(g(gy))")
+    (expect-lambda-equal false "λfx.f(f(fx))" "λgy.g(g(gx))")))
+
+(define-test lambda-reduction-test
+  :depends-on (parse-lambda-term-test
+               lambda-equality-test)
   (macrolet ((is-reduced (expected term)
                `(is term-equal
                     (parse-lambda-term ,expected)
@@ -217,7 +232,8 @@
     (is-reduced "λfx.f(f(f(f(f(fx)))))" "(λmnf.m(nf))(λfx.f(f(fx)))(λfx.f(fx))")))
 
 (define-test church-numerals-test
-  :depends-on (parse-lambda-term-test)
+  :depends-on (parse-lambda-term-test
+               lambda-equality-test)
   (is term-equal (parse-lambda-term "λfx.x") (natural->church 0))
   (is term-equal (parse-lambda-term "λfx.fx") (natural->church 1))
   (is term-equal (parse-lambda-term "λfx.f(fx)") (natural->church 2))
@@ -233,6 +249,7 @@
 
 (define-test lambda-programs-test
   :depends-on (parse-lambda-term-test
+               lambda-equality-test
                lambda-reduction-test
                church-numerals-test)
   (macrolet ((lambda-program-result (path)

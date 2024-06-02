@@ -13,8 +13,8 @@
   (:documentation "A lambda abstraction in lambda calculus."))
 
 (defun make-lambda-abstraction (variable body)
-  "Construct and return a LAMBDA-ABSTRACTION whose parameter is VARIABLE
-and whose body is BODY."
+  "Construct and return a LAMBDA-ABSTRACTION with parameter VARIABLE and
+BODY."
   (make-instance 'lambda-abstraction :variable variable :body body))
 
 (defun lambda-abstraction-p (object)
@@ -67,7 +67,7 @@ application of the LEFT term to the RIGHT term."
   (:documentation "A variable in the lambda calculus."))
 
 (defun make-lambda-variable (name)
-  "Construct and return a LAMBDA-VARIABLE called NAME."
+  "Construct and return a LAMBDA-VARIABLE."
   (let ((name (if (atom name) (list name) name)))
     (make-instance 'lambda-variable :name name)))
 
@@ -88,8 +88,13 @@ of variables."))
 (defmethod alpha-equivalent-p ((term1 lambda-variable)
                                (term2 lambda-variable)
                                env)
-  (let ((item (cdr (assoc term1 env :test #'same-variable-p))))
-    (same-variable-p (or item term1) term2)))
+  (let ((assoc1 (cdr (assoc term1 env :test #'same-variable-p))))
+    (cond (assoc1
+           (same-variable-p assoc1 term2))
+          ((rassoc term2 env :test #'same-variable-p)
+           nil)
+          (t
+           (same-variable-p term1 term2)))))
 
 (defmethod alpha-equivalent-p ((term1 lambda-application)
                                (term2 lambda-application)
@@ -120,7 +125,7 @@ of variables."))
     (occurs-free-p variable (lambda-abstraction-body term))))
 
 (defgeneric free-variables (term)
-  (:documentation "Return the free variables in TERM."))
+  (:documentation "Return the free variables in the lambda calculus TERM."))
 
 (defmethod free-variables ((term lambda-variable))
   (list term))
@@ -139,7 +144,7 @@ of variables."))
                (free-variables body))))
 
 (defgeneric bound-variables (term)
-  (:documentation "Return the bound variables in TERM."))
+  (:documentation "Return the bound variables in the lambda calculus TERM."))
 
 (defmethod bound-variables ((term lambda-variable))
   nil)
@@ -160,7 +165,7 @@ of variables."))
 
 (defgeneric substitute-avoiding-capture (term target replacement)
   (:documentation "Return a new term where the free occurrences of the variable TARGET in
-TERM have been replaced with REPLACEMENT without capturing other
+TERM have been replaced with REPLACEMENT without capturing free
 variables while doing so."))
 
 (defmethod substitute-avoiding-capture ((term lambda-variable)
