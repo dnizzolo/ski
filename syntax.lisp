@@ -249,7 +249,7 @@
 
 (defgeneric substitute-definitions (definitions term)
   (:documentation "Recursively replace all occurrences of names in the lambda calculus
-TERM with their definition in DEFINITIONS."))
+TERM with their DEFINITIONS."))
 
 (defmethod substitute-definitions (definitions (term lambda-variable))
   term)

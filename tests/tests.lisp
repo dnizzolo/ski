@@ -247,6 +247,17 @@
   (is = 8 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(fx)))))))")))
   (is = 11 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(fx))))))))))"))))
 
+(define-test godelization-test
+  :depends-on (parse-combinator-term-test)
+  (macrolet ((is-goedel (string term)
+               `(progn
+                  (is string= ,string (sk->goedel (parse-combinator-term ,term)))
+                  (is term-equal (parse-combinator-term ,term) (goedel->sk ,string)))))
+    (is-goedel "3312424" "SKK")
+    (is-goedel "3333131144321441424" "S(SS)(KS)SK")
+    (is-goedel "3333311433214144241432244" "SS(KSS)KS(KK)")
+    (is-goedel "3331242433321433124244144" "SKK(KS(SKK)S)")))
+
 (define-test lambda-programs-test
   :depends-on (parse-lambda-term-test
                lambda-equality-test

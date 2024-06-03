@@ -131,3 +131,33 @@
         (loop for var in (nreverse vars)
               do (setf term (eliminate term var))
               finally (return term))))))
+
+(defgeneric sk->goedel (term)
+  (:documentation "Return the string denoting the Gödel number of TERM."))
+
+(defmethod sk->goedel ((term (eql (get-combinator 'S))))
+  "1")
+
+(defmethod sk->goedel ((term (eql (get-combinator 'K))))
+  "2")
+
+(defmethod sk->goedel ((term combinator-application))
+  (concatenate
+   'string
+   "3"
+   (sk->goedel (application-left term))
+   (sk->goedel (application-right term))
+   "4"))
+
+(defun goedel->sk (string)
+  "Return the SK term denoted by the Gödel number STRING."
+  (parse-combinator-term
+   (nsubstitute
+    #\S #\1
+    (nsubstitute
+     #\K #\2
+     (nsubstitute
+      #\( #\3
+      (nsubstitute
+       #\) #\4
+       string))))))

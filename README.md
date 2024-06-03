@@ -130,7 +130,7 @@ FACT FIVE;
 * `occurs-free-p` - check if a variable occurs free in a term.
 * `print-term` - print a parsable representation of a term.
 * `term-equal` - check if two terms are equal.
-* `reduce-term` - reduce a term to its beta normal form.
+* `reduce-term` - reduce a term to its normal form.
 * `driver-loop` - a REPL for combinatory logic.
 * `combinator-term` - base class for combinatory logic terms.
 * `combinator-term-p` - check if an object is a combinatory logic
@@ -141,7 +141,7 @@ FACT FIVE;
 * `combinator-arity` - return the number of "arguments" a combinator
   takes.
 * `make-combinator-variable` - make a variable for combinatory logic.
-* `combinator-application-p` - check if an object is an application of
+* `combinator-application-p` - check if an object is an application in
   combinatory logic.
 * `define-combinator` - define a combinator.
 * `get-combinator` - get the combinator object associated with a
@@ -168,6 +168,8 @@ FACT FIVE;
 * `substitute-avoiding-capture` - substitute without changing the
   term's meaning.
 * `lambda-combinator-p` - check if a lambda term is a combinator.
+* `sk->goedel` - return the Gödel number of a SK calculus term.
+* `goedel->sk` - return the SK calculus term of a Gödel number.
 * `natural->church` - return the Church numeral of a natural number.
 * `church->natural` - return the natural number represented by a
   Church numeral.
@@ -178,8 +180,9 @@ FACT FIVE;
 * `parse-combinator-term` - parse a combinatory logic term from a
   string.
 * `parse-lambda-term` - parse a lambda calculus term from a string.
-* `build-lambda-program` - create a list of lambda calculus to be reduced from
-  program.
+* `build-lambda-program` - given a lambda program, return the list of
+  pure lambda calculus terms defined by the program, ready to be
+  evaluated.
 * `run-lambda-program` - run a lambda program.
 
 All symbols associated with combinators are exported.

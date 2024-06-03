@@ -45,6 +45,8 @@
    #:bound-variables
    #:substitute-avoiding-capture
    #:lambda-combinator-p
+   #:sk->goedel
+   #:goedel->sk
    #:natural->church
    #:church->natural
    #:combinator->ski
