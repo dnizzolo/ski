@@ -6,8 +6,8 @@ Raymond Smullyan.
 
 ## Description
 
-This system is meant to be used to play around with combinatory logic
-and lambda calculus. You can parse terms from strings with the usual
+This system is meant to be used to play with combinatory logic and
+lambda calculus. You can parse terms from strings with the usual
 grammar and perform operations on them such as reduction or
 translations from a system to another. In order to make lambda
 calculus easier to handle, the system can parse and evaluate lambda
@@ -74,7 +74,7 @@ Parse error
 %%% SB(Vx)zy
 z(yxz)
 %%% UBa
-a(bba)
+a(BBa)
 %%% FMJBS
 J(SS)
 %%% W(EB)SKLM
@@ -103,19 +103,51 @@ PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
 MULT = λnm.λf.n(mf);
 
 G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));
-Y = (λxy.y(xxy)) (λxy.y(xxy));
+Y = (λxy.y(xxy)) (λxy.y(xxy));                  # Turing's fixed point combinator.
 FACT = Y G;
 
 FACT FIVE;
+```
+
+### Combinator programs
+
+You can write combinator programs that define new combinators in term
+of other combinators. Definitions can be recursive, this allows you to
+sidestep the need for the fixed point principle as they do in the
+book.
+
+```
+@ZERO = I;
+@ONE = V(KI)I;
+@TWO = V(KI)(V(KI)I);
+
+@ISZERO = TK;
+@SUCC = V(KI);
+@PRED = T(KI);
+
+@ADD n m = (@ISZERO n)(m)(@SUCC (@ADD (@PRED n) m));
+@MULT n m = (@ISZERO n)(@ZERO)(@ADD m (@MULT (@PRED n) m));
+
+@ISZERO @ZERO;
+@ISZERO @ONE;
+@ISZERO @TWO;
+
+@SUCC @ONE;
+@SUCC @TWO;
+@SUCC (@SUCC (@SUCC @TWO));
+@PRED (@SUCC (@SUCC (@SUCC @TWO)));
+@ADD (@ADD @TWO (@SUCC (@SUCC @TWO))) @TWO;
+@MULT (@ADD @TWO @TWO) (@SUCC @TWO);
 ```
 
 ## Exports
 
 * `term` - base class for terms.
 * `term-p` - check if an object is a term.
-* `variable` - base class for variables.
+* `variable` - base class for variables and generic function that
+  returns the variable of a lambda abstraction.
 * `variable-p` - check if an object is a variable.
-* `variable-name` - get the name of a variable.
+* `name` - get the name of an object that has a name slot.
 * `same-variable-p` - check if two variable have the same name.
 * `make-variable-name-generator` - make an object that generates
   variable names.
@@ -123,10 +155,8 @@ FACT FIVE;
   object.
 * `application` - base class for applications.
 * `application-p` - check if an object is an application.
-* `application-left` - get the left object of an application, i.e. the
-  "function".
-* `application-right` - get the right object of an application, i.e.
-  the "argument".
+* `left` - get the left object of an application, i.e. the "function".
+* `right` - get the right object of an application, i.e. the "argument".
 * `occurs-free-p` - check if a variable occurs free in a term.
 * `print-term` - print a parsable representation of a term.
 * `term-equal` - check if two terms are equal.
@@ -137,9 +167,7 @@ FACT FIVE;
   term.
 * `combinator` - class for a combinator in combinatory logic.
 * `combinator-p` - check if an object is a combinator.
-* `combinator-name` - get the name of a combinator.
-* `combinator-arity` - return the number of "arguments" a combinator
-  takes.
+* `arity` - return the number of "arguments" a term takes.
 * `make-combinator-variable` - make a variable for combinatory logic.
 * `combinator-application-p` - check if an object is an application in
   combinatory logic.
@@ -157,10 +185,7 @@ FACT FIVE;
 * `make-lambda-abstraction` - make a lambda calculus abstraction.
 * `lambda-abstraction-p` - check if an object is a lambda calculus
   abstraction.
-* `lambda-abstraction-variable` - get the variable of a lambda
-  calculus abstraction.
-* `lambda-abstraction-body` - get the body of a lambda calculus
-  abstraction.
+* `body` - get the body of a lambda calculus abstraction.
 * `free-variables` - return the free variables in a lambda calculus
   term.
 * `bound-variables` - return the bound variables in a lambda calculus
@@ -184,6 +209,7 @@ FACT FIVE;
   pure lambda calculus terms defined by the program, ready to be
   evaluated.
 * `run-lambda-program` - run a lambda program.
+* `run-combinator-program` - run a combinator program.
 
 All symbols associated with combinators are exported.
 

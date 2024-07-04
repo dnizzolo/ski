@@ -5,15 +5,15 @@
    #:term
    #:term-p
    #:variable
+   #:name
    #:variable-p
-   #:variable-name
    #:same-variable-p
    #:make-variable-name-generator
    #:generate-name
    #:application
+   #:left
+   #:right
    #:application-p
-   #:application-left
-   #:application-right
    #:occurs-free-p
    #:print-term
    #:term-equal
@@ -22,9 +22,8 @@
    #:combinator-term
    #:combinator-term-p
    #:combinator
+   #:arity
    #:combinator-p
-   #:combinator-name
-   #:combinator-arity
    #:make-combinator-variable
    #:combinator-variable-p
    #:make-combinator-application
@@ -39,8 +38,7 @@
    #:lambda-application-p
    #:make-lambda-abstraction
    #:lambda-abstraction-p
-   #:lambda-abstraction-variable
-   #:lambda-abstraction-body
+   #:body
    #:free-variables
    #:bound-variables
    #:substitute-avoiding-capture
@@ -49,6 +47,8 @@
    #:goedel->sk
    #:natural->church
    #:church->natural
+   #:natural->barendregt
+   #:barendregt->natural
    #:combinator->ski
    #:lambda->ski
    #:lambda->sk
@@ -56,6 +56,7 @@
    #:parse-lambda-term
    #:build-lambda-program
    #:run-lambda-program
+   #:run-combinator-program
    #:S
    #:S1
    #:K

@@ -16,18 +16,14 @@
   term)
 
 (defmethod lambda->ski ((term lambda-variable))
-  (make-combinator-variable (variable-name term)))
+  (make-combinator-variable (name term)))
 
 (defmethod lambda->ski ((term application))
-  (with-accessors ((left application-left)
-                   (right application-right))
-      term
+  (with-accessors ((left left) (right right)) term
     (make-combinator-application (lambda->ski left) (lambda->ski right))))
 
 (defmethod lambda->ski ((term lambda-abstraction))
-  (with-accessors ((variable lambda-abstraction-variable)
-                   (body lambda-abstraction-body))
-      term
+  (with-accessors ((variable variable) (body body)) term
     (cond ((not (occurs-free-p variable body))
            (make-combinator-application
             (get-combinator 'K)
@@ -38,9 +34,7 @@
            (lambda->ski
             (make-lambda-abstraction variable (lambda->ski body))))
           ((application-p body)
-           (with-accessors ((left application-left)
-                            (right application-right))
-               body
+           (with-accessors ((left left) (right right)) body
              (if (and (variable-p right)
                       (same-variable-p right variable)
                       (not (occurs-free-p variable left)))
@@ -64,18 +58,14 @@
   term)
 
 (defmethod lambda->sk ((term lambda-variable))
-  (make-combinator-variable (variable-name term)))
+  (make-combinator-variable (name term)))
 
 (defmethod lambda->sk ((term application))
-  (with-accessors ((left application-left)
-                   (right application-right))
-      term
+  (with-accessors ((left left) (right right)) term
     (make-combinator-application (lambda->sk left) (lambda->sk right))))
 
 (defmethod lambda->sk ((term lambda-abstraction))
-  (with-accessors ((variable lambda-abstraction-variable)
-                   (body lambda-abstraction-body))
-      term
+  (with-accessors ((variable variable) (body body)) term
     (cond ((not (occurs-free-p variable body))
            (make-combinator-application
             (get-combinator 'K)
@@ -90,9 +80,7 @@
            (lambda->sk
             (make-lambda-abstraction variable (lambda->sk body))))
           ((application-p body)
-           (with-accessors ((left application-left)
-                            (right application-right))
-               body
+           (with-accessors ((left left) (right right)) body
              (if (and (variable-p right)
                       (same-variable-p right variable)
                       (not (occurs-free-p variable left)))
@@ -111,16 +99,16 @@
                    ((not (occurs-free-p var term))
                     (make-combinator-application (get-combinator 'K) term))
                    ((and (combinator-application-p term)
-                         (term-equal var (application-right term))
-                         (not (occurs-free-p var (application-left term))))
-                    (application-left term))
+                         (term-equal var (right term))
+                         (not (occurs-free-p var (left term))))
+                    (left term))
                    (t
                     (make-combinator-application
                      (make-combinator-application
                       (get-combinator 'S)
-                      (eliminate (application-left term) var))
-                     (eliminate (application-right term) var))))))
-    (let* ((arity (combinator-arity combinator))
+                      (eliminate (left term) var))
+                     (eliminate (right term) var))))))
+    (let* ((arity (arity combinator))
            (vars (loop with g = (make-variable-name-generator)
                        repeat arity
                        collect (make-combinator-variable (generate-name g)))))
@@ -133,24 +121,27 @@
               finally (return term))))))
 
 (defgeneric sk->goedel (term)
-  (:documentation "Return the string denoting the Gödel number of TERM."))
+  (:documentation "Return the Gödel number of TERM."))
 
 (defmethod sk->goedel ((term (eql (get-combinator 'S))))
-  "1")
+  1)
 
 (defmethod sk->goedel ((term (eql (get-combinator 'K))))
-  "2")
+  2)
 
 (defmethod sk->goedel ((term combinator-application))
-  (concatenate
-   'string
-   "3"
-   (sk->goedel (application-left term))
-   (sk->goedel (application-right term))
-   "4"))
+  (nth-value
+   0
+   (parse-integer
+    (concatenate
+     'string
+     "3"
+     (write-to-string (sk->goedel (left term)))
+     (write-to-string (sk->goedel (right term)))
+     "4"))))
 
-(defun goedel->sk (string)
-  "Return the SK term denoted by the Gödel number STRING."
+(defun goedel->sk (n)
+  "Return the SK term denoted by the Gödel number N."
   (parse-combinator-term
    (nsubstitute
     #\S #\1
@@ -160,4 +151,48 @@
       #\( #\3
       (nsubstitute
        #\) #\4
-       string))))))
+       (write-to-string n)))))))
+
+(defun natural->church (n)
+  "Convert the natural number N to its representation as a Church
+numeral."
+  (declare (type (integer 0) n))
+  (let ((f (make-lambda-variable #\f))
+        (x (make-lambda-variable #\x)))
+    (make-lambda-abstraction
+     f
+     (make-lambda-abstraction
+      x
+      (let ((acc x))
+        (dotimes (i n acc)
+          (setf acc (make-lambda-application f acc))))))))
+
+(defun church->natural (term)
+  "Convert the Church numeral TERM to its corresponding natural number."
+  (do ((result 0)
+       (body (body (body term))))
+      ((lambda-variable-p body) result)
+    (incf result)
+    (setf body (right body))))
+
+(defun natural->barendregt (n)
+  "Convert the natural number N to its representation in the scheme used
+in the book To Mock a Mockingbird by Raymond Smullyan."
+  (declare (type (integer 0) n))
+  (let* ((v (get-combinator 'V))
+         (z (get-combinator 'I))
+         (f (make-combinator-application (get-combinator 'K) z))
+         (succ (make-combinator-application v f))
+         (result z))
+    (dotimes (i n result)
+      (setf result (make-combinator-application succ result)))))
+
+(defun barendregt->natural (term)
+  "Convert a numeral from the scheme used in the book To Mock a
+  Mockingbird by Raymond Smullyan its corresponding natural number."
+  (do ((i (get-combinator 'I))
+       (result 0)
+       (acc term))
+      ((term-equal i acc) result)
+    (incf result)
+    (setf acc (right acc))))

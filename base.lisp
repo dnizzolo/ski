@@ -14,8 +14,16 @@
   (:documentation "Print a parsable representation of the TERM to the specified STREAM."))
 
 (defclass variable ()
-  ((name :initarg :name :accessor variable-name))
+  ((name :initarg :name :accessor name))
   (:documentation "The base class for a variable."))
+
+(defmethod initialize-instance :after ((variable variable) &key)
+  (with-slots (name) variable
+    (setf name (etypecase name
+                 (list name)
+                 (string (coerce name 'list))
+                 (character (list name))
+                 (symbol (coerce (string-downcase (symbol-name name)) 'list))))))
 
 (defun variable-p (object)
   "Return true if OBJECT is a VARIABLE, and NIL otherwise."
@@ -28,11 +36,15 @@
 
 (defmethod print-term ((term variable)
                        &optional (stream *standard-output*))
-  (with-accessors ((name variable-name)) term
+  (with-accessors ((name name)) term
     (if (rest name)
-        (format stream "{~{~A~}}" name)
-        (format stream "~A" (first name))))
+        (format stream "{~{~a~}}" name)
+        (princ (first name) stream)))
   term)
+
+(defun variable->symbol (variable)
+  "Returnt the symbol that has the same name as VARIABLE."
+  (intern (string-upcase (coerce (name variable) 'string))))
 
 (defclass variable-name-generator ()
   ((state :initform (list #\a)))
@@ -57,11 +69,11 @@
   (:documentation "Return true if the two variable are the equivalent, and NIL otherwise."))
 
 (defmethod same-variable-p ((variable1 variable) (variable2 variable))
-  (equal (variable-name variable1) (variable-name variable2)))
+  (equal (name variable1) (name variable2)))
 
 (defclass application ()
-  ((left :initarg :left :accessor application-left)
-   (right :initarg :right :accessor application-right))
+  ((left :initarg :left :accessor left)
+   (right :initarg :right :accessor right))
   (:documentation "The base class for an application."))
 
 (defun application-p (object)
@@ -71,7 +83,7 @@
 (defmethod print-object ((object application) stream)
   (with-slots (left right) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~A ~A)" left right))))
+      (format stream "(~a ~a)" left right))))
 
 (defgeneric occurs-free-p (variable term)
   (:documentation "Return true if VARIABLE is free in TERM, and NIL otherwise."))
@@ -80,9 +92,7 @@
   (same-variable-p variable term))
 
 (defmethod occurs-free-p ((variable variable) (term application))
-  (with-accessors ((left application-left)
-                   (right application-right))
-      term
+  (with-accessors ((left left) (right right)) term
     (or (occurs-free-p variable left) (occurs-free-p variable right))))
 
 (defgeneric reduce-term (term)

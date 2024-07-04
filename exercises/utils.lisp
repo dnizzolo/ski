@@ -12,7 +12,7 @@
 
 (defun report-terms (terms)
   "Display to standard output each term in the list TERMS."
-  (format t "~&Got ~D term~:p." (length terms))
+  (format t "~&Got ~d term~:p." (length terms))
   (dolist (term terms)
     (fresh-line)
     (print-term term))
@@ -46,7 +46,7 @@ SET with length N."
 (defun substitute-nils (object replacements)
   "Substitute all NILs in OBJECT with REPLACEMENTS, in order."
   (if (combinator-application-p object)
-      (with-accessors ((left application-left) (right application-right)) object
+      (with-accessors ((left left) (right right)) object
         (multiple-value-bind (new-left replacements-after-left)
             (substitute-nils left replacements)
           (multiple-value-bind (new-right replacements-after-right)
@@ -55,7 +55,7 @@ SET with length N."
                     replacements-after-right))))
       (if (null object)
           (if (null replacements)
-              (error "Cannot substitute ~A because there are no more replacements."
+              (error "Cannot substitute ~a because there are no more replacements."
                      object)
               (values (first replacements) (rest replacements)))
           (values object replacements))))

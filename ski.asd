@@ -1,8 +1,12 @@
-(asdf:defsystem #:ski
+(defsystem "ski"
   :description "A simple system to explore combinators."
   :author "Daniele Nizzolo <dani.nizzolo@gmail.com>"
+  :maintainer "Daniele Nizzolo <dani.nizzolo@gmail.com>"
+  :homepage "https://github.com/dnizzolo/ski"
+  :source-control (:git "https://github.com/dnizzolo/ski.git")
+  :bug-tracker "https://github.com/dnizzolo/ski/issues"
+  :depends-on ("esrap")
   :serial t
-  :depends-on (#:esrap)
   :components ((:file "package")
                (:file "base")
                (:file "ski")
@@ -24,14 +28,18 @@
                              (:file "12-12")
                              (:file "12-16")
                              (:file "12-16-01")
-                             (:file "12-16-07"))))
-  :in-order-to ((asdf:test-op (asdf:test-op #:ski/test))))
+                             (:file "12-16-07")))
+               (:static-file "README.md"))
+  :in-order-to ((test-op (test-op "ski/test"))))
 
-(asdf:defsystem #:ski/test
+(defsystem "ski/test"
   :description "Tests for the ski system."
   :author "Daniele Nizzolo <dani.nizzolo@gmail.com>"
-  :depends-on (#:ski #:parachute)
+  :maintainer "Daniele Nizzolo <dani.nizzolo@gmail.com>"
+  :homepage "https://github.com/dnizzolo/ski"
+  :source-control (:git "https://github.com/dnizzolo/ski.git")
+  :bug-tracker "https://github.com/dnizzolo/ski/issues"
+  :depends-on ("ski" "parachute")
   :components ((:module "tests"
                 :components ((:file "tests"))))
-  :perform (test-op (op c)
-                    (uiop:symbol-call :parachute :test :ski/test)))
+  :perform (test-op (op c) (symbol-call :parachute :test :ski/test)))

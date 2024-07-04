@@ -6,6 +6,10 @@ bin/ski:
 		--eval '(in-package :ski)' \
 		--eval "(sb-ext:save-lisp-and-die #p\"bin/ski\" :toplevel #'driver-loop :executable t)"
 
+.PHONY: run
+run: bin/ski
+	@bin/ski
+
 .PHONY: clean
 clean:
 	rm -rf bin/

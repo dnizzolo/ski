@@ -1,6 +1,8 @@
 (defpackage #:ski/test
   (:use #:cl #:ski #:parachute)
-  (:shadowing-import-from #:ski #:variable))
+  (:shadowing-import-from #:ski #:variable)
+  (:shadowing-import-from #:parachute #:body)
+  (:shadowing-import-from #:parachute #:name))
 
 (in-package #:ski/test)
 
@@ -163,7 +165,7 @@
   (macrolet ((is-ski (combinator)
                (let ((collect-variables-form
                        `(loop with g = (make-variable-name-generator)
-                              repeat (combinator-arity (get-combinator ,combinator))
+                              repeat (arity (get-combinator ,combinator))
                               collect (make-combinator-variable (generate-name g)))))
                  `(is term-equal
                       (reduce-term
@@ -247,16 +249,29 @@
   (is = 8 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(fx)))))))")))
   (is = 11 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(fx))))))))))"))))
 
-(define-test godelization-test
+(define-test barendregt-numerals-test
   :depends-on (parse-combinator-term-test)
-  (macrolet ((is-goedel (string term)
+  (is term-equal (parse-combinator-term "I") (natural->barendregt 0))
+  (is term-equal (parse-combinator-term "V(KI)I") (natural->barendregt 1))
+  (is term-equal (parse-combinator-term "V(KI)(V(KI)I)") (natural->barendregt 2))
+  (is term-equal (parse-combinator-term "V(KI)(V(KI)(V(KI)I))") (natural->barendregt 3))
+  (is term-equal (parse-combinator-term "V(KI)(V(KI)(V(KI)(V(KI)I)))") (natural->barendregt 4))
+  (is = 0 (barendregt->natural (parse-combinator-term "I")))
+  (is = 1 (barendregt->natural (parse-combinator-term "V(KI)I")))
+  (is = 2 (barendregt->natural (parse-combinator-term "V(KI)(V(KI)I)")))
+  (is = 3 (barendregt->natural (parse-combinator-term "V(KI)(V(KI)(V(KI)I))")))
+  (is = 4 (barendregt->natural (parse-combinator-term "V(KI)(V(KI)(V(KI)(V(KI)I)))"))))
+
+(define-test goedelization-test
+  :depends-on (parse-combinator-term-test)
+  (macrolet ((is-goedel (n term)
                `(progn
-                  (is string= ,string (sk->goedel (parse-combinator-term ,term)))
-                  (is term-equal (parse-combinator-term ,term) (goedel->sk ,string)))))
-    (is-goedel "3312424" "SKK")
-    (is-goedel "3333131144321441424" "S(SS)(KS)SK")
-    (is-goedel "3333311433214144241432244" "SS(KSS)KS(KK)")
-    (is-goedel "3331242433321433124244144" "SKK(KS(SKK)S)")))
+                  (is = ,n (sk->goedel (parse-combinator-term ,term)))
+                  (is term-equal (parse-combinator-term ,term) (goedel->sk ,n)))))
+    (is-goedel 3312424 "SKK")
+    (is-goedel 3333131144321441424 "S(SS)(KS)SK")
+    (is-goedel 3333311433214144241432244 "SS(KSS)KS(KK)")
+    (is-goedel 3331242433321433124244144 "SKK(KS(SKK)S)")))
 
 (define-test lambda-programs-test
   :depends-on (parse-lambda-term-test
@@ -272,3 +287,16 @@
     (is term-equal (natural->church 40) (lambda-program-result #p"aritm.lam"))
     (is term-equal (natural->church 4) (lambda-program-result #p"pred.lam"))
     (is term-equal (parse-lambda-term "λxy.y") (lambda-program-result #p"basic.lam"))))
+
+(define-test combinator-programs-test
+  :depends-on (parse-combinator-term-test
+               combinator-reduction-test
+               barendregt-numerals-test)
+  (macrolet ((combinator-program-result (path)
+               `(run-combinator-program
+                 (asdf:system-relative-pathname
+                  :ski (merge-pathnames #p"tests/" ,path))
+                 (make-broadcast-stream))))
+    (is term-equal (natural->barendregt 120) (combinator-program-result #p"fact.com"))
+    (is term-equal (natural->barendregt 12) (combinator-program-result #p"aritm.com"))
+    (is term-equal (get-combinator 'K) (combinator-program-result #p"neg.com"))))

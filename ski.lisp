@@ -8,8 +8,8 @@
   (typep object 'combinator-term))
 
 (defclass combinator (combinator-term)
-  ((name :initarg :name :accessor combinator-name)
-   (arity :initarg :arity :accessor combinator-arity))
+  ((name :initarg :name :accessor name)
+   (arity :initarg :arity :accessor arity))
   (:documentation "A combinator in combinatory logic."))
 
 (defun make-combinator (name arity)
@@ -23,7 +23,7 @@
 (defmethod print-object ((object combinator) stream)
   (with-slots (name) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~A)" name))))
+      (format stream "(~a)" name))))
 
 (defclass combinator-application (application combinator-term) ()
   (:documentation "An application of combinatory logic terms."))
@@ -43,8 +43,7 @@ application of the LEFT term to the RIGHT term."
 
 (defun make-combinator-variable (name)
   "Construct and return a COMBINATOR-VARIABLE."
-  (let ((name (if (atom name) (list name) name)))
-    (make-instance 'combinator-variable :name name)))
+  (make-instance 'combinator-variable :name name))
 
 (defun combinator-variable-p (object)
   "Return true if OBJECT is a COMBINATOR-VARIABLE, and NIL otherwise."
@@ -62,25 +61,25 @@ application of the LEFT term to the RIGHT term."
 
 (defmethod term-equal ((term1 combinator-application)
                        (term2 combinator-application))
-  (with-accessors ((left1 application-left) (right1 application-right)) term1
-    (with-accessors ((left2 application-left) (right2 application-right)) term2
+  (with-accessors ((left1 left) (right1 right)) term1
+    (with-accessors ((left2 left) (right2 right)) term2
       (and (term-equal left1 left2) (term-equal right1 right2)))))
 
 (defmethod print-term ((term combinator)
                        &optional (stream *standard-output*))
-  (format stream "~A" (combinator-name term))
+  (princ (name term) stream)
   term)
 
 (defmethod print-term ((term combinator-application)
                        &optional (stream *standard-output*))
-  (with-accessors ((left application-left) (right application-right)) term
-    (print-term left)
+  (with-accessors ((left left) (right right)) term
+    (print-term left stream)
     (if (combinator-application-p right)
         (progn
           (write-char #\( stream)
-          (print-term right)
+          (print-term right stream)
           (write-char #\) stream))
-        (print-term right)))
+        (print-term right stream)))
   term)
 
 (defmethod occurs-free-p ((variable variable) (term combinator))
@@ -97,7 +96,7 @@ terms. Return the new term and the new stack as multiple values."))
   (values term stack))
 
 (defmethod step-combinator-term ((term combinator-application) (stack list))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (values left (cons right stack))))
 
 (defmethod reduce-term ((term combinator-term))
@@ -141,7 +140,7 @@ terms. Return the new term and the new stack as multiple values."))
 
 (defun intern-combinator (combinator)
   "Store a combinator."
-  (setf (gethash (combinator-name combinator) *combinators*) combinator))
+  (setf (gethash (name combinator) *combinators*) combinator))
 
 (defmacro define-combinator (name variables definition)
   "Define a new combinator called NAME that takes VARIABLES as parameters
@@ -152,6 +151,10 @@ and whose definition is DEFINITION."
        ,(expand-step-combinator-method name arity variables definition))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun expand-bindings-for-stack-access (variables stack-variable)
+    (loop for i from 0
+          for var in variables
+          collect `(,var (nth ,i ,stack-variable))))
   (defun expand-step-combinator-method (name arity variables definition)
     "Compute the DEFMETHOD form for a combinator given its NAME, VARIABLES
 and DEFINITION."
@@ -167,16 +170,14 @@ and DEFINITION."
                                      `(make-combinator-application
                                        ,curr
                                        ,(expand-combinator-term subexpr)))
-                            finally (return curr)))))
-             (expand-bindings (stack-variable)
-               (loop for i from 0
-                     for var in variables
-                     collect `(,var (nth ,i ,stack-variable)))))
+                            finally (return curr))))))
       (let ((stack-variable (gensym)))
         `(defmethod step-combinator-term ((term (eql (get-combinator ',name)))
                                           (,stack-variable list))
            (if (<= ,arity (length ,stack-variable))
-               (let ,(expand-bindings stack-variable)
+               (let ,(expand-bindings-for-stack-access
+                      variables
+                      stack-variable)
                  (declare (ignorable ,@variables))
                  (values ,(expand-combinator-term definition)
                          (nthcdr ,arity ,stack-variable)))

@@ -12,7 +12,7 @@ PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
 MULT = λnm.λf.n(mf);
 
 G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));
-Y = (λxy.y(xxy)) (λxy.y(xxy));
+Y = (λxy.y(xxy)) (λxy.y(xxy));        # Turing's fixed point combinator.
 FACT = Y G;
 
 FACT FIVE;

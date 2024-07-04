@@ -8,8 +8,8 @@
   (typep object 'lambda-term))
 
 (defclass lambda-abstraction (lambda-term)
-  ((variable :initarg :variable :accessor lambda-abstraction-variable)
-   (body :initarg :body :accessor lambda-abstraction-body))
+  ((variable :initarg :variable :accessor variable)
+   (body :initarg :body :accessor body))
   (:documentation "A lambda abstraction in lambda calculus."))
 
 (defun make-lambda-abstraction (variable body)
@@ -24,14 +24,14 @@ BODY."
 (defmethod print-object ((object lambda-abstraction) stream)
   (with-slots (variable body) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~A ~A)" variable body))))
+      (format stream "(~a ~a)" variable body))))
 
 (defmethod print-term ((term lambda-abstraction)
                        &optional (stream *standard-output*))
   (write-char #\λ stream)
-  (print-term (lambda-abstraction-variable term) stream)
+  (print-term (variable term) stream)
   (write-char #\. stream)
-  (print-term (lambda-abstraction-body term) stream)
+  (print-term (body term) stream)
   term)
 
 (defclass lambda-application (application lambda-term) ()
@@ -48,7 +48,7 @@ application of the LEFT term to the RIGHT term."
 
 (defmethod print-term ((term lambda-application)
                        &optional (stream *standard-output*))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (if (lambda-abstraction-p left)
         (progn
           (write-char #\( stream)
@@ -68,8 +68,7 @@ application of the LEFT term to the RIGHT term."
 
 (defun make-lambda-variable (name)
   "Construct and return a LAMBDA-VARIABLE."
-  (let ((name (if (atom name) (list name) name)))
-    (make-instance 'lambda-variable :name name)))
+  (make-instance 'lambda-variable :name name))
 
 (defun lambda-variable-p (object)
   "Return true if OBJECT is a LAMBDA-VARIABLE, and NIL otherwise."
@@ -80,14 +79,10 @@ application of the LEFT term to the RIGHT term."
 terms, and NIL otherwise. Use an environment to resolve the bindings
 of variables."))
 
-(defmethod alpha-equivalent-p ((term1 lambda-term)
-                               (term2 lambda-term)
-                               env)
+(defmethod alpha-equivalent-p ((term1 lambda-term) (term2 lambda-term) env)
   nil)
 
-(defmethod alpha-equivalent-p ((term1 lambda-variable)
-                               (term2 lambda-variable)
-                               env)
+(defmethod alpha-equivalent-p ((term1 lambda-variable) (term2 lambda-variable) env)
   (let ((assoc1 (cdr (assoc term1 env :test #'same-variable-p))))
     (cond (assoc1
            (same-variable-p assoc1 term2))
@@ -96,33 +91,23 @@ of variables."))
           (t
            (same-variable-p term1 term2)))))
 
-(defmethod alpha-equivalent-p ((term1 lambda-application)
-                               (term2 lambda-application)
-                               env)
+(defmethod alpha-equivalent-p ((term1 lambda-application) (term2 lambda-application) env)
   (and
-   (alpha-equivalent-p (application-left term1)
-                       (application-left term2)
-                       env)
-   (alpha-equivalent-p (application-right term1)
-                       (application-right term2)
-                       env)))
+   (alpha-equivalent-p (left term1) (left term2) env)
+   (alpha-equivalent-p (right term1) (right term2) env)))
 
-(defmethod alpha-equivalent-p ((term1 lambda-abstraction)
-                               (term2 lambda-abstraction)
-                               env)
+(defmethod alpha-equivalent-p ((term1 lambda-abstraction) (term2 lambda-abstraction) env)
   (alpha-equivalent-p
-   (lambda-abstraction-body term1)
-   (lambda-abstraction-body term2)
-   (acons (lambda-abstraction-variable term1)
-          (lambda-abstraction-variable term2)
-          env)))
+   (body term1)
+   (body term2)
+   (acons (variable term1) (variable term2) env)))
 
 (defmethod term-equal ((term1 lambda-term) (term2 lambda-term))
   (alpha-equivalent-p term1 term2 nil))
 
 (defmethod occurs-free-p ((variable variable) (term lambda-abstraction))
-  (unless (same-variable-p variable (lambda-abstraction-variable term))
-    (occurs-free-p variable (lambda-abstraction-body term))))
+  (unless (same-variable-p variable (variable term))
+    (occurs-free-p variable (body term))))
 
 (defgeneric free-variables (term)
   (:documentation "Return the free variables in the lambda calculus TERM."))
@@ -131,15 +116,13 @@ of variables."))
   (list term))
 
 (defmethod free-variables ((term lambda-application))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (union (free-variables left)
            (free-variables right)
            :test #'same-variable-p)))
 
 (defmethod free-variables ((term lambda-abstraction))
-  (with-accessors ((variable lambda-abstraction-variable)
-                   (body lambda-abstraction-body))
-      term
+  (with-accessors ((variable variable) (body body)) term
     (delete-if (lambda (fv) (same-variable-p fv variable))
                (free-variables body))))
 
@@ -150,15 +133,13 @@ of variables."))
   nil)
 
 (defmethod bound-variables ((term lambda-application))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (union (bound-variables left)
            (bound-variables right)
            :test #'same-variable-p)))
 
 (defmethod bound-variables ((term lambda-abstraction))
-  (with-accessors ((variable lambda-abstraction-variable)
-                   (body lambda-abstraction-body))
-      term
+  (with-accessors ((variable variable) (body body)) term
     (union (list variable)
            (bound-variables body)
            :test #'same-variable-p)))
@@ -176,7 +157,7 @@ variables while doing so."))
 (defmethod substitute-avoiding-capture ((term lambda-application)
                                         (target lambda-variable)
                                         (replacement lambda-term))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (make-lambda-application
      (substitute-avoiding-capture left target replacement)
      (substitute-avoiding-capture right target replacement))))
@@ -193,9 +174,7 @@ variables while doing so."))
                (let ((var (make-lambda-variable (generate-name generator))))
                  (unless (member var forbidden :test #'same-variable-p)
                    (return var)))))))
-    (with-accessors ((variable lambda-abstraction-variable)
-                     (body lambda-abstraction-body))
-        term
+    (with-accessors ((variable variable) (body body)) term
       (cond ((same-variable-p variable target)
              term)
             ((not (occurs-free-p target body))
@@ -226,19 +205,14 @@ place and NIL otherwise."))
 
 (defmethod beta-reduce ((term lambda-abstraction))
   (multiple-value-bind (new-body stepped)
-      (beta-reduce (lambda-abstraction-body term))
-    (values (make-lambda-abstraction
-             (lambda-abstraction-variable term)
-             new-body)
+      (beta-reduce (body term))
+    (values (make-lambda-abstraction (variable term) new-body)
             stepped)))
 
 (defmethod beta-reduce ((term lambda-application))
-  (with-accessors ((left application-left) (right application-right)) term
+  (with-accessors ((left left) (right right)) term
     (if (lambda-abstraction-p left)
-        (values (substitute-avoiding-capture
-                 (lambda-abstraction-body left)
-                 (lambda-abstraction-variable left)
-                 right)
+        (values (substitute-avoiding-capture (body left) (variable left) right)
                 t)
         (multiple-value-bind (new-left stepped-left)
             (beta-reduce left)
@@ -264,25 +238,3 @@ otherwise."))
 
 (defmethod lambda-combinator-p ((term lambda-abstraction))
   (null (free-variables term)))
-
-(defun natural->church (n)
-  "Convert the natural number N to its representation as a Church
-numeral."
-  (declare (type (integer 0) n))
-  (let ((f (make-lambda-variable #\f))
-        (x (make-lambda-variable #\x)))
-    (make-lambda-abstraction
-     f
-     (make-lambda-abstraction
-      x
-      (let ((acc x))
-        (dotimes (i n acc)
-          (setf acc (make-lambda-application f acc))))))))
-
-(defun church->natural (term)
-  "Convert the Church numeral TERM to its corresponding natural number."
-  (do ((result 0)
-       (body (lambda-abstraction-body (lambda-abstraction-body term))))
-      ((lambda-variable-p body) result)
-    (incf result)
-    (setf body (application-right body))))
