@@ -6,12 +6,11 @@ Raymond Smullyan.
 
 ## Description
 
-This system is meant to be used to play with combinatory logic and
-lambda calculus. You can parse terms from strings with the usual
-grammar and perform operations on them such as reduction or
-translations from a system to another. In order to make lambda
-calculus easier to handle, the system can parse and evaluate lambda
-programs.
+This system is only meant to be used to play with combinatory logic
+and lambda calculus. You can parse terms from strings with the usual
+grammars and perform operations on them such as reduction or
+translations from a system to another. Additionally you may write
+simple programs for lambda calculus or combinatory logic.
 
 ## Examples
 
@@ -89,22 +88,27 @@ zyx
 
 ### Lambda programs
 
-And here is an example of a lambda program that computes the factorial
-of 5.
+In lambda programs you can define, in uppercase letters, names for
+lambda terms and use them to build more complex lambda terms in
+subsequent definitions and lambda terms. Definitions can't be
+recursive, they're just a way to name a lambda term to make other
+lambda terms more readable. After the definitions (if any) you must
+provide some lambda terms to reduce. Here is an example of a lambda
+program that computes the factorial of 5.
 
 ```
-ONE = λfx.fx;
-FIVE = λfx.f(f(f(f(fx))));
+ONE = λfx.fx;                                    # The number 1 as a Church numeral.
+FIVE = λfx.f(f(f(f(fx))));                       # The number 5 as a Church numeral.
 
-T = λxy.x;
-F = λxy.y;
-ISZERO = λn.n(T F)T;
-PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
-MULT = λnm.λf.n(mf);
+T = λxy.x;                                       # The True boolean.
+F = λxy.y;                                       # The False boolean.
+ISZERO = λn.n(T F)T;                             # Test if a number is zero.
+PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u); # Return the predecessor of a number.
+MULT = λnm.λf.n(mf);                             # Multiply two numbers.
 
-G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));
-Y = (λxy.y(xxy)) (λxy.y(xxy));                  # Turing's fixed point combinator.
-FACT = Y G;
+G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));  # Pre-factorial, used to build the factorial.
+Y = (λxy.y(xxy)) (λxy.y(xxy));                   # Turing's fixed point combinator.
+FACT = Y G;                                      # The factorial function.
 
 FACT FIVE;
 ```
@@ -112,9 +116,12 @@ FACT FIVE;
 ### Combinator programs
 
 You can write combinator programs that define new combinators in term
-of other combinators. Definitions can be recursive, this allows you to
-sidestep the need for the fixed point principle as they do in the
-book.
+of other combinators. Definitions of new combinators can take
+parameters and can be recursive: this allows you to sidestep the need
+for the fixed point principle which they formally use in the book.
+Defined combinators names must be made up of uppercase letters and
+start with a `@`. After the definitions (if any) you must provide some
+combinatory logic term to reduce.
 
 ```
 @ZERO = I;
@@ -155,8 +162,8 @@ book.
   object.
 * `application` - base class for applications.
 * `application-p` - check if an object is an application.
-* `left` - get the left object of an application, i.e. the "function".
-* `right` - get the right object of an application, i.e. the "argument".
+* `left` - get the left object of an application, i.e. the function.
+* `right` - get the right object of an application, i.e. the argument.
 * `occurs-free-p` - check if a variable occurs free in a term.
 * `print-term` - print a parsable representation of a term.
 * `term-equal` - check if two terms are equal.
@@ -169,6 +176,10 @@ book.
 * `combinator-p` - check if an object is a combinator.
 * `arity` - return the number of "arguments" a term takes.
 * `make-combinator-variable` - make a variable for combinatory logic.
+* `combinator-variable-p` - check if an object is a combinatory logic
+  variable.
+* `make-combinator-application` - make a combinatory logic
+  application.
 * `combinator-application-p` - check if an object is an application in
   combinatory logic.
 * `define-combinator` - define a combinator.
@@ -198,6 +209,10 @@ book.
 * `natural->church` - return the Church numeral of a natural number.
 * `church->natural` - return the natural number represented by a
   Church numeral.
+* `natural->barendregt` - return the numeral of a natural number
+  according to the encoding used in the book.
+* `barendregt->natural` - return the natural number represented by a
+  numeral according to the encoding used in the book.
 * `combinator->ski` - express a combinator using only the S, K, and I
   combinators.
 * `lambda->ski` - traduce a term from lambda calculus to SKI calculus.

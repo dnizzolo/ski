@@ -355,7 +355,7 @@ each reduced term to STREAM."
     (make-combinator-definition
      (name name)
      (length vars)
-     (compile nil (expand-combinator-operation vars expr)))))
+     (compile nil (expand-operation vars expr)))))
 
 (esrap:defrule combinator-program-expr
     (and (esrap:? combinator-program-expr) combinator-program-factor)
@@ -408,23 +408,23 @@ ARITY and performs OPERATION."
   (format stream "@~a" (name term))
   term)
 
-(defgeneric combinator-definition-body-form (term variables)
-  (:documentation "Compute the body form of a combinator definition."))
+(defgeneric operation-form (term variables)
+  (:documentation "Compute the form of a combinator operation."))
 
-(defmethod combinator-definition-body-form ((term combinator-term) variables)
+(defmethod operation-form ((term combinator-term) variables)
   term)
 
-(defmethod combinator-definition-body-form ((term combinator-variable) variables)
+(defmethod operation-form ((term combinator-variable) variables)
   (if (member term variables :test #'same-variable-p)
       (variable->symbol term)
       term))
 
-(defmethod combinator-definition-body-form ((term combinator-application) variables)
+(defmethod operation-form ((term combinator-application) variables)
   `(make-combinator-application
-    ,(combinator-definition-body-form (left term) variables)
-    ,(combinator-definition-body-form (right term) variables)))
+    ,(operation-form (left term) variables)
+    ,(operation-form (right term) variables)))
 
-(defun expand-combinator-operation (variables expr)
+(defun expand-operation (variables expr)
   "Compute the lambda form that implements the operation of a combinator
 definition."
   (let ((stack-variable (gensym))
@@ -434,7 +434,7 @@ definition."
               let-variables
               stack-variable)
          (declare (ignorable ,@let-variables))
-         (values ,(combinator-definition-body-form expr variables)
+         (values ,(operation-form expr variables)
                  (nthcdr ,(length variables) ,stack-variable))))))
 
 (defparameter *combinator-program-definitions* nil

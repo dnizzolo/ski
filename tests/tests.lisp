@@ -281,7 +281,7 @@
   (macrolet ((lambda-program-result (path)
                `(run-lambda-program
                  (asdf:system-relative-pathname
-                  :ski (merge-pathnames #p"tests/" ,path))
+                  :ski (merge-pathnames #p"tests/programs/" ,path))
                  (make-broadcast-stream))))
     (is term-equal (natural->church 120) (lambda-program-result #p"fact.lam"))
     (is term-equal (natural->church 40) (lambda-program-result #p"aritm.lam"))
@@ -295,7 +295,7 @@
   (macrolet ((combinator-program-result (path)
                `(run-combinator-program
                  (asdf:system-relative-pathname
-                  :ski (merge-pathnames #p"tests/" ,path))
+                  :ski (merge-pathnames #p"tests/programs/" ,path))
                  (make-broadcast-stream))))
     (is term-equal (natural->barendregt 120) (combinator-program-result #p"fact.com"))
     (is term-equal (natural->barendregt 12) (combinator-program-result #p"aritm.com"))

@@ -1,18 +1,13 @@
 LISP = sbcl
 
-bin/ski:
-	mkdir -p bin/
+ski:
 	$(LISP) --eval '(asdf:load-system :ski)' \
 		--eval '(in-package :ski)' \
-		--eval "(sb-ext:save-lisp-and-die #p\"bin/ski\" :toplevel #'driver-loop :executable t)"
-
-.PHONY: run
-run: bin/ski
-	@bin/ski
+		--eval "(sb-ext:save-lisp-and-die #p\"ski\" :toplevel #'driver-loop :executable t)"
 
 .PHONY: clean
 clean:
-	rm -rf bin/
+	rm -f ski
 
 .PHONY: test
 test:

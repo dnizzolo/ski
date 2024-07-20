@@ -2,6 +2,7 @@
   :description "A simple system to explore combinators."
   :author "Daniele Nizzolo <dani.nizzolo@gmail.com>"
   :maintainer "Daniele Nizzolo <dani.nizzolo@gmail.com>"
+  :license "MIT"
   :homepage "https://github.com/dnizzolo/ski"
   :source-control (:git "https://github.com/dnizzolo/ski.git")
   :bug-tracker "https://github.com/dnizzolo/ski/issues"
@@ -29,17 +30,22 @@
                              (:file "12-16")
                              (:file "12-16-01")
                              (:file "12-16-07")))
-               (:static-file "README.md"))
+               (:module "programs")
+               (:static-file "README.md")
+               (:static-file "Makefile")
+               (:static-file "LICENSE"))
   :in-order-to ((test-op (test-op "ski/test"))))
 
 (defsystem "ski/test"
   :description "Tests for the ski system."
   :author "Daniele Nizzolo <dani.nizzolo@gmail.com>"
   :maintainer "Daniele Nizzolo <dani.nizzolo@gmail.com>"
+  :license "MIT"
   :homepage "https://github.com/dnizzolo/ski"
   :source-control (:git "https://github.com/dnizzolo/ski.git")
   :bug-tracker "https://github.com/dnizzolo/ski/issues"
   :depends-on ("ski" "parachute")
   :components ((:module "tests"
-                :components ((:file "tests"))))
+                :components ((:file "tests")
+                             (:module "programs"))))
   :perform (test-op (op c) (symbol-call :parachute :test :ski/test)))
