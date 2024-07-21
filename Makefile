@@ -1,9 +1,9 @@
 LISP = sbcl
 
-ski:
+ski: main.lisp transformations.lisp ski.lisp lambda.lisp base.lisp syntax.lisp package.lisp
 	$(LISP) --eval '(asdf:load-system :ski)' \
 		--eval '(in-package :ski)' \
-		--eval "(sb-ext:save-lisp-and-die #p\"ski\" :toplevel #'driver-loop :executable t)"
+		--eval "(sb-ext:save-lisp-and-die #p\"ski\" :toplevel #'toplevel :executable t)"
 
 .PHONY: clean
 clean:

@@ -65,7 +65,7 @@ CL-USER> (asdf:load-system :ski)
 T
 CL-USER> (in-package :ski)
 #<PACKAGE "SKI">
-SKI> (driver-loop)
+SKI> (combinator-driver-loop)
 %%% Kxy
 x
 %%% M42
@@ -86,6 +86,48 @@ x(ywv)
 zyx
 ```
 
+### REPL for lambda calculus
+
+Similarly there is a REPL for lambda calculus which is invoked with
+the `lambda-driver-loop` function.
+
+### Combinator programs
+
+You can write combinator programs that define new combinators in term
+of other combinators. Definitions of new combinators can take
+parameters and can be recursive: this allows you to sidestep the need
+for the fixed point principle which they formally use in the book.
+Defined combinators names must be made up of uppercase letters and
+start with a `@`. After the definitions (if any) you must provide some
+combinatory logic term to reduce.
+
+```
+@ZERO = I;                      # The number 0, as a numeral.
+@ONE = V(KI)I;                  # The number 1, as a numeral.
+@TWO = V(KI)(V(KI)I);           # The number 2, as a numeral.
+
+@ISZERO = TK;                   # Test if a number is zero.
+@SUCC = V(KI);                  # Compute the successor of a number.
+@PRED = T(KI);                  # Compute the predecessor of a number.
+
+# Add and multiply are combinators.
+@ADD n m = (@ISZERO n)(m)(@SUCC (@ADD (@PRED n) m));
+@MULT n m = (@ISZERO n)(@ZERO)(@ADD m (@MULT (@PRED n) m));
+
+# Check the @ISZERO combinator.
+@ISZERO @ZERO;
+@ISZERO @ONE;
+@ISZERO @TWO;
+
+# Some arithmetic computations.
+@SUCC @ONE;
+@SUCC @TWO;
+@SUCC (@SUCC (@SUCC @TWO));
+@PRED (@SUCC (@SUCC (@SUCC @TWO)));
+@ADD (@ADD @TWO (@SUCC (@SUCC @TWO))) @TWO;
+@MULT (@ADD @TWO @TWO) (@SUCC @TWO);
+```
+
 ### Lambda programs
 
 In lambda programs you can define, in uppercase letters, names for
@@ -100,8 +142,8 @@ program that computes the factorial of 5.
 ONE = λfx.fx;                                    # The number 1 as a Church numeral.
 FIVE = λfx.f(f(f(f(fx))));                       # The number 5 as a Church numeral.
 
-T = λxy.x;                                       # The True boolean.
-F = λxy.y;                                       # The False boolean.
+T = λxy.x;                                       # The True boolean value.
+F = λxy.y;                                       # The False boolean value.
 ISZERO = λn.n(T F)T;                             # Test if a number is zero.
 PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u); # Return the predecessor of a number.
 MULT = λnm.λf.n(mf);                             # Multiply two numbers.
@@ -110,42 +152,13 @@ G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));  # Pre-factorial, used to buil
 Y = (λxy.y(xxy)) (λxy.y(xxy));                   # Turing's fixed point combinator.
 FACT = Y G;                                      # The factorial function.
 
-FACT FIVE;
+FACT FIVE;                                       # The factorial of 5 as a Church numeral.
 ```
 
-### Combinator programs
+### CLI
 
-You can write combinator programs that define new combinators in term
-of other combinators. Definitions of new combinators can take
-parameters and can be recursive: this allows you to sidestep the need
-for the fixed point principle which they formally use in the book.
-Defined combinators names must be made up of uppercase letters and
-start with a `@`. After the definitions (if any) you must provide some
-combinatory logic term to reduce.
-
-```
-@ZERO = I;
-@ONE = V(KI)I;
-@TWO = V(KI)(V(KI)I);
-
-@ISZERO = TK;
-@SUCC = V(KI);
-@PRED = T(KI);
-
-@ADD n m = (@ISZERO n)(m)(@SUCC (@ADD (@PRED n) m));
-@MULT n m = (@ISZERO n)(@ZERO)(@ADD m (@MULT (@PRED n) m));
-
-@ISZERO @ZERO;
-@ISZERO @ONE;
-@ISZERO @TWO;
-
-@SUCC @ONE;
-@SUCC @TWO;
-@SUCC (@SUCC (@SUCC @TWO));
-@PRED (@SUCC (@SUCC (@SUCC @TWO)));
-@ADD (@ADD @TWO (@SUCC (@SUCC @TWO))) @TWO;
-@MULT (@ADD @TWO @TWO) (@SUCC @TWO);
-```
+Run the `make` command to compile the system into an executable which
+can run REPLs and evaluate programs.
 
 ## Exports
 
@@ -168,7 +181,7 @@ combinatory logic term to reduce.
 * `print-term` - print a parsable representation of a term.
 * `term-equal` - check if two terms are equal.
 * `reduce-term` - reduce a term to its normal form.
-* `driver-loop` - a REPL for combinatory logic.
+* `combinator-driver-loop` - a REPL for combinatory logic.
 * `combinator-term` - base class for combinatory logic terms.
 * `combinator-term-p` - check if an object is a combinatory logic
   term.
@@ -204,6 +217,7 @@ combinatory logic term to reduce.
 * `substitute-avoiding-capture` - substitute without changing the
   term's meaning.
 * `lambda-combinator-p` - check if a lambda term is a combinator.
+* `lambda-driver-loop` - a REPL for lambda calculus.
 * `sk->goedel` - return the Gödel number of a SK calculus term.
 * `goedel->sk` - return the SK calculus term of a Gödel number.
 * `natural->church` - return the Church numeral of a natural number.

@@ -115,7 +115,7 @@ terms. Return the new term and the new stack as multiple values."))
                        (reduce-term stacked))))
     curr-term))
 
-(defun driver-loop ()
+(defun combinator-driver-loop ()
   "A REPL for combinatory logic."
   (flet ((prompt-for-input ()
            (format t "~&%%% ")

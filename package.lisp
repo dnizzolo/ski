@@ -18,7 +18,7 @@
    #:print-term
    #:term-equal
    #:reduce-term
-   #:driver-loop
+   #:combinator-driver-loop
    #:combinator-term
    #:combinator-term-p
    #:combinator
@@ -43,6 +43,7 @@
    #:bound-variables
    #:substitute-avoiding-capture
    #:lambda-combinator-p
+   #:lambda-driver-loop
    #:sk->goedel
    #:goedel->sk
    #:natural->church

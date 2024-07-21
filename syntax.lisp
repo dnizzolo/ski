@@ -316,8 +316,8 @@ each reduced term to STREAM."
   (let (last)
     (dolist (expr (build-lambda-program program) last)
       (setf last (reduce-term expr))
-      (fresh-line stream)
-      (print-term last stream))))
+      (print-term last stream)
+      (terpri stream))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Combinatory logic programs.
@@ -468,5 +468,5 @@ each reduced term to STREAM."
           last)
       (dolist (expr exprs last)
         (setf last (reduce-term expr))
-        (fresh-line stream)
-        (print-term last stream)))))
+        (print-term last stream)
+        (terpri stream)))))

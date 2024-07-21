@@ -238,3 +238,19 @@ otherwise."))
 
 (defmethod lambda-combinator-p ((term lambda-abstraction))
   (null (free-variables term)))
+
+(defun lambda-driver-loop ()
+  "A REPL for lambda calculus."
+  (flet ((prompt-for-input ()
+           (format t "~&%%% ")
+           (finish-output)
+           (read-line t nil))
+         (drive (input)
+           (print-term (reduce-term (parse-lambda-term input)))))
+  (loop
+    (let ((input (prompt-for-input)))
+      (cond ((null input) (return))
+            ((zerop (length input)))
+            (t (handler-case (drive input)
+                 (esrap:esrap-parse-error ()
+                   (format t "~&Parse error")))))))))

@@ -14,6 +14,7 @@
                (:file "lambda")
                (:file "transformations")
                (:file "syntax")
+               (:file "main")
                (:module "exercises"
                 :components ((:file "utils")
                              (:file "11-06")
