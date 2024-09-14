@@ -1,6 +1,7 @@
 # SKI
 
-A simple system to explore combinators inspired by the book [To Mock a
+A simple system to explore combinatory logic and lambda calculus
+inspired by the book [To Mock a
 Mockingbird](https://en.wikipedia.org/wiki/To_Mock_a_Mockingbird) by
 Raymond Smullyan.
 
@@ -24,7 +25,15 @@ T
 CL-USER> (in-package :ski)
 #<PACKAGE "SKI">
 SKI> (parse-combinator-term "KIxy")
-#<COMBINATOR-APPLICATION (#<COMBINATOR-APPLICATION (#<COMBINATOR-APPLICATION (#<COMBINATOR (K) {1004F16C83}> #<COMBINATOR (I) {1004F3BC13}>) {100237FBB3}> #<COMBINATOR-VARIABLE (x) {100237FBE3}>) {100237FC13}> #<COMBINATOR-VARIABLE (y) {100237FC43}>) {100237FC73}>
+#<COMBINATOR-APPLICATION
+  (#<COMBINATOR-APPLICATION
+    (#<COMBINATOR-APPLICATION
+      (#<COMBINATOR (K) {1004F16C83}> #<COMBINATOR (I) {1004F3BC13}>)
+     {100237FBB3}>
+    #<COMBINATOR-VARIABLE (x) {100237FBE3}>)
+   {100237FC13}>
+   #<COMBINATOR-VARIABLE (y) {100237FC43}>)
+{100237FC73}>
 NIL
 T
 SKI> (reduce-term *)
@@ -96,10 +105,11 @@ the `lambda-driver-loop` function.
 You can write combinator programs that define new combinators in term
 of other combinators. Definitions of new combinators can take
 parameters and can be recursive: this allows you to sidestep the need
-for the fixed point principle which they formally use in the book.
-Defined combinators names must be made up of uppercase letters and
-start with a `@`. After the definitions (if any) you must provide some
-combinatory logic term to reduce.
+for the fixed point principle which is used in the formal discussion
+in the book. Defined combinators names must be made up of uppercase
+letters and start with a `@`. After the definitions (if any, they're
+optional) you must provide some combinatory logic term to reduce. Here
+is an example of arithmetic combinators.
 
 ```
 @ZERO = I;                      # The number 0, as a numeral.
@@ -134,9 +144,9 @@ In lambda programs you can define, in uppercase letters, names for
 lambda terms and use them to build more complex lambda terms in
 subsequent definitions and lambda terms. Definitions can't be
 recursive, they're just a way to name a lambda term to make other
-lambda terms more readable. After the definitions (if any) you must
-provide some lambda terms to reduce. Here is an example of a lambda
-program that computes the factorial of 5.
+lambda terms more readable. After the definitions (if any, they're
+optional) you must provide some lambda terms to reduce. Here is an
+example of a lambda program that computes the factorial of 5.
 
 ```
 ONE = λfx.fx;                                    # The number 1 as a Church numeral.
@@ -145,8 +155,8 @@ FIVE = λfx.f(f(f(f(fx))));                       # The number 5 as a Church num
 T = λxy.x;                                       # The True boolean value.
 F = λxy.y;                                       # The False boolean value.
 ISZERO = λn.n(T F)T;                             # Test if a number is zero.
-PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u); # Return the predecessor of a number.
-MULT = λnm.λf.n(mf);                             # Multiply two numbers.
+PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u); # Compute the predecessor of a number.
+MULT = λnm.λf.n(mf);                             # Compute the product of two numbers.
 
 G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));  # Pre-factorial, used to build the factorial.
 Y = (λxy.y(xxy)) (λxy.y(xxy));                   # Turing's fixed point combinator.
@@ -247,7 +257,7 @@ All symbols associated with combinators are exported.
 I brute-forced some exercises by generating all possible full binary
 trees with a certain amount of leaves, then replacing the leaves with
 combinators and reducing the obtained term to see if it satisfies the
-exercise requirement. This approach doesn't usually work however
+exercise requirement. However, this approach is fundamentally flawed
 because it often gets stuck in an infinite loop trying to reduce a
 term that doesn't have a normal form.
 

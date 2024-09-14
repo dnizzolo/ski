@@ -403,8 +403,7 @@ ARITY and performs OPERATION."
     (print-unreadable-object (object stream :type t :identity t)
       (format stream "(~a)" name))))
 
-(defmethod print-term ((term combinator-definition)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term combinator-definition) &optional (stream *standard-output*))
   (format stream "@~a" (name term))
   term)
 

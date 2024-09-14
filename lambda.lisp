@@ -13,8 +13,7 @@
   (:documentation "A lambda abstraction in lambda calculus."))
 
 (defun make-lambda-abstraction (variable body)
-  "Construct and return a LAMBDA-ABSTRACTION with parameter VARIABLE and
-BODY."
+  "Construct and return a LAMBDA-ABSTRACTION with VARIABLE and BODY."
   (make-instance 'lambda-abstraction :variable variable :body body))
 
 (defun lambda-abstraction-p (object)
@@ -26,8 +25,7 @@ BODY."
     (print-unreadable-object (object stream :type t :identity t)
       (format stream "(~a ~a)" variable body))))
 
-(defmethod print-term ((term lambda-abstraction)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term lambda-abstraction) &optional (stream *standard-output*))
   (write-char #\λ stream)
   (print-term (variable term) stream)
   (write-char #\. stream)
@@ -46,8 +44,7 @@ application of the LEFT term to the RIGHT term."
   "Return true if OBJECT is a LAMBDA-APPLICATION, and NIL otherwise."
   (typep object 'lambda-application))
 
-(defmethod print-term ((term lambda-application)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term lambda-application) &optional (stream *standard-output*))
   (with-accessors ((left left) (right right)) term
     (if (lambda-abstraction-p left)
         (progn
@@ -75,7 +72,7 @@ application of the LEFT term to the RIGHT term."
   (typep object 'lambda-variable))
 
 (defgeneric alpha-equivalent-p (term1 term2 env)
-  (:documentation "Return true if the two terms are alpha-equivalent lambda calculus
+  (:documentation "Return true if TERM1 and TERM2 are alpha-equivalent lambda calculus
 terms, and NIL otherwise. Use an environment to resolve the bindings
 of variables."))
 
@@ -144,6 +141,16 @@ of variables."))
            (bound-variables body)
            :test #'same-variable-p)))
 
+(defgeneric lambda-combinator-p (term)
+  (:documentation "Return true if TERM is a lambda calculus combinator, and NIL
+otherwise."))
+
+(defmethod lambda-combinator-p ((term lambda-term))
+  nil)
+
+(defmethod lambda-combinator-p ((term lambda-abstraction))
+  (null (free-variables term)))
+
 (defgeneric substitute-avoiding-capture (term target replacement)
   (:documentation "Return a new term where the free occurrences of the variable TARGET in
 TERM have been replaced with REPLACEMENT without capturing free
@@ -196,9 +203,9 @@ variables while doing so."))
                  replacement))))))))
 
 (defgeneric beta-reduce (term)
-  (:documentation "Perform a step in the reduction of TERM. Return, as multiple values,
-the new term and a generalized boolean that is true if a step took
-place and NIL otherwise."))
+  (:documentation "Perform a beta reduction on TERM. Return, as multiple values, the new
+term and a generalized boolean that is true if a step took place and
+NIL otherwise."))
 
 (defmethod beta-reduce ((term lambda-variable))
   (values term nil))
@@ -228,16 +235,6 @@ place and NIL otherwise."))
       (unless stepped
         (return term))
       (setf term new-term))))
-
-(defgeneric lambda-combinator-p (term)
-  (:documentation "Return true if TERM is a lambda calculus combinator, and NIL
-otherwise."))
-
-(defmethod lambda-combinator-p ((term lambda-term))
-  nil)
-
-(defmethod lambda-combinator-p ((term lambda-abstraction))
-  (null (free-variables term)))
 
 (defun lambda-driver-loop ()
   "A REPL for lambda calculus."

@@ -10,7 +10,7 @@
   :serial t
   :components ((:file "package")
                (:file "base")
-               (:file "ski")
+               (:file "combinators")
                (:file "lambda")
                (:file "transformations")
                (:file "syntax")

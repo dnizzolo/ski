@@ -65,13 +65,11 @@ application of the LEFT term to the RIGHT term."
     (with-accessors ((left2 left) (right2 right)) term2
       (and (term-equal left1 left2) (term-equal right1 right2)))))
 
-(defmethod print-term ((term combinator)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term combinator) &optional (stream *standard-output*))
   (princ (name term) stream)
   term)
 
-(defmethod print-term ((term combinator-application)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term combinator-application) &optional (stream *standard-output*))
   (with-accessors ((left left) (right right)) term
     (print-term left stream)
     (if (combinator-application-p right)
@@ -144,7 +142,7 @@ terms. Return the new term and the new stack as multiple values."))
 
 (defmacro define-combinator (name variables definition)
   "Define a new combinator called NAME that takes VARIABLES as parameters
-and whose definition is DEFINITION."
+and whose body is DEFINITION."
   (let ((arity (length variables)))
     `(progn
        (intern-combinator (make-combinator ',name ,arity))

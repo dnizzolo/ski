@@ -34,8 +34,7 @@
     (print-unreadable-object (object stream :type t :identity t)
       (princ name stream))))
 
-(defmethod print-term ((term variable)
-                       &optional (stream *standard-output*))
+(defmethod print-term ((term variable) &optional (stream *standard-output*))
   (with-accessors ((name name)) term
     (if (rest name)
         (format stream "{~{~a~}}" name)
@@ -43,7 +42,7 @@
   term)
 
 (defun variable->symbol (variable)
-  "Returnt the symbol that has the same name as VARIABLE."
+  "Return a symbol that has the same name as VARIABLE."
   (intern (string-upcase (coerce (name variable) 'string))))
 
 (defclass variable-name-generator ()
@@ -66,7 +65,8 @@
                   (code-char (1+ (char-code (nth pos state))))))))))
 
 (defgeneric same-variable-p (variable1 variable2)
-  (:documentation "Return true if the two variable are the equivalent, and NIL otherwise."))
+  (:documentation "Return true if VARIABLE1 and VARIABLE2 have the same name, and NIL
+otherwise."))
 
 (defmethod same-variable-p ((variable1 variable) (variable2 variable))
   (equal (name variable1) (name variable2)))
