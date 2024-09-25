@@ -73,8 +73,8 @@ application of the LEFT term to the RIGHT term."
 
 (defgeneric alpha-equivalent-p (term1 term2 env)
   (:documentation "Return true if TERM1 and TERM2 are alpha-equivalent lambda calculus
-terms, and NIL otherwise. Use an environment to resolve the bindings
-of variables."))
+terms, and NIL otherwise. Use the environment ENV to resolve the
+bindings of variables."))
 
 (defmethod alpha-equivalent-p ((term1 lambda-term) (term2 lambda-term) env)
   nil)

@@ -189,7 +189,7 @@ in the book To Mock a Mockingbird by Raymond Smullyan."
 
 (defun barendregt->natural (term)
   "Convert a numeral from the scheme used in the book To Mock a
-  Mockingbird by Raymond Smullyan its corresponding natural number."
+  Mockingbird by Raymond Smullyan to its corresponding natural number."
   (do ((i (get-combinator 'I))
        (result 0)
        (acc term))

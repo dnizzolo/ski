@@ -24,10 +24,7 @@
 ;;;; Combinatory logic grammar.
 
 (esrap:defrule combinator-term
-    combinator-expr)
-
-(esrap:defrule combinator-expr
-    (and (esrap:? combinator-expr) combinator-factor)
+    (and (esrap:? combinator-term) combinator-factor)
   (:destructure (left right)
     (if left
         (make-combinator-application left right)
@@ -109,10 +106,7 @@
 ;;;; Lambda calculus grammar.
 
 (esrap:defrule lambda-term
-    lambda-expr)
-
-(esrap:defrule lambda-expr
-    (and (esrap:? lambda-expr) lambda-factor)
+    (and (esrap:? lambda-term) lambda-factor)
   (:destructure (left right)
     (if left
         (make-lambda-application left right)
@@ -159,8 +153,8 @@
 ;;;; Common utilities for programs.
 
 (defgeneric read-program (source)
-  (:documentation "Read a program from SOURCE skipping comments. Comments are identified
-with the # character and extend to the end of the line."))
+  (:documentation "Read a program from SOURCE, skipping comments. Comments are identified
+with the # character and they extend to the end of the line."))
 
 (defmethod read-program ((source stream))
   (with-output-to-string (sink)
@@ -185,7 +179,7 @@ with the # character and extend to the end of the line."))
 
 (esrap:defrule lambda-program
     (and (* lambda-definition)
-         (+ (and lambda-program-expr ";" whitespace*)))
+         (+ (and lambda-program-term ";" whitespace*)))
   (:destructure (definitions exprs)
     (list (coerce definitions 'vector)
           (mapcar #'first exprs))))
@@ -202,7 +196,7 @@ with the # character and extend to the end of the line."))
          whitespace*
          "="
          whitespace*
-         lambda-program-expr
+         lambda-program-term
          whitespace*
          ";"
          whitespace*)
@@ -210,8 +204,8 @@ with the # character and extend to the end of the line."))
     (declare (ignore w1 w2 eq w3 w4 semicolon w5))
     (cons (coerce name 'string) expr)))
 
-(esrap:defrule lambda-program-expr
-    (and (esrap:? lambda-program-expr) lambda-program-factor)
+(esrap:defrule lambda-program-term
+    (and (esrap:? lambda-program-term) lambda-program-factor)
   (:destructure (left right)
     (if left
         (make-lambda-application left right)
@@ -221,14 +215,14 @@ with the # character and extend to the end of the line."))
     (or lambda-program-abstraction
         lambda-variable
         lambda-name
-        parenthesized-lambda-program-expr))
+        parenthesized-lambda-program-term))
 
 (esrap:defrule lambda-program-abstraction
     (and whitespace*
          (or "λ" "@")
          (+ lambda-variable)
          "."
-         lambda-program-expr
+         lambda-program-term
          whitespace*)
   (:destructure (w1 lambda variables dot body w2)
     (declare (ignore w1 lambda dot w2))
@@ -237,10 +231,10 @@ with the # character and extend to the end of the line."))
             :initial-value body
             :from-end t)))
 
-(esrap:defrule parenthesized-lambda-program-expr
+(esrap:defrule parenthesized-lambda-program-term
     (and whitespace*
          "("
-         lambda-program-expr
+         lambda-program-term
          ")"
          whitespace*)
   (:destructure (w1 open-parenthesis term close-parenthesis w2)
@@ -302,13 +296,15 @@ terms to be reduced."
                  (or (dotimes (j i)
                        (when (string= item (car (aref definitions j)))
                          (return t)))
-                     (error "Definition of ~a contains undefined term ~a."
+                     (error "The definition of ~a contains the undefined term ~a."
                             (car (aref definitions i))
                             item)))))
            (mapcar (lambda (expr)
                      (substitute-definitions definitions expr))
                    expressions)))
-    (multiple-value-call #'build (values-list (parse-lambda-program program)))))
+    (destructuring-bind (definitions expressions)
+        (parse-lambda-program program)
+      (build definitions expressions))))
 
 (defun run-lambda-program (program &optional (stream *standard-output*))
   "Parse and run the lambda PROGRAM. Return the last reduced term. Print
@@ -324,9 +320,12 @@ each reduced term to STREAM."
 
 (esrap:defrule combinator-program
     (and (* combinator-definition)
-         (+ (and combinator-program-expr ";" whitespace*)))
+         (+ (and combinator-program-term ";" whitespace*)))
   (:destructure (definitions exprs)
-    (list definitions (mapcar #'first exprs))))
+    (let ((definitions-table (make-hash-table :test #'equal)))
+      (dolist (def definitions)
+        (setf (gethash (name def) definitions-table) def))
+      (list definitions-table (mapcar #'first exprs)))))
 
 (esrap:defrule combinator-name
     (and whitespace*
@@ -346,7 +345,7 @@ each reduced term to STREAM."
          (* combinator-variable)
          "="
          whitespace*
-         combinator-program-expr
+         combinator-program-term
          whitespace*
          ";"
          whitespace*)
@@ -357,8 +356,8 @@ each reduced term to STREAM."
      (length vars)
      (compile nil (expand-operation vars expr)))))
 
-(esrap:defrule combinator-program-expr
-    (and (esrap:? combinator-program-expr) combinator-program-factor)
+(esrap:defrule combinator-program-term
+    (and (esrap:? combinator-program-term) combinator-program-factor)
   (:destructure (left right)
     (if left
         (make-combinator-application left right)
@@ -368,12 +367,12 @@ each reduced term to STREAM."
     (or combinator
         combinator-variable
         combinator-name
-        parenthesized-combinator-program-expr))
+        parenthesized-combinator-program-term))
 
-(esrap:defrule parenthesized-combinator-program-expr
+(esrap:defrule parenthesized-combinator-program-term
     (and whitespace*
          "("
-         combinator-program-expr
+         combinator-program-term
          ")"
          whitespace*)
   (:destructure (w1 open-parenthesis term close-parenthesis w2)
@@ -439,19 +438,12 @@ definition."
 (defparameter *combinator-program-definitions* nil
   "The table of defined combinatory logic terms in a combinator program.")
 
-(defun lookup-combinator-definition (def)
-  "Return the combinatory logic term associated with DEF."
-  (find (name def)
-        *combinator-program-definitions*
-        :key #'name
-        :test #'string=))
-
 (defmethod step-combinator-term ((term combinator-definition) (stack list))
-  (let ((def (lookup-combinator-definition term)))
-    (cond ((null def)
+  (let ((definition (gethash (name term) *combinator-program-definitions*)))
+    (cond ((null definition)
            (error "Undefined combinator term ~a." term))
-          ((<= (arity def) (length stack))
-           (funcall (operation def) stack))
+          ((<= (arity definition) (length stack))
+           (funcall (operation definition) stack))
           (t (call-next-method)))))
 
 (defun parse-combinator-program (input)
@@ -461,11 +453,11 @@ definition."
 (defun run-combinator-program (program &optional (stream *standard-output*))
   "Parse and run the combinator PROGRAM. Return the last reduced term. Print
 each reduced term to STREAM."
-  (destructuring-bind (definitions exprs)
+  (destructuring-bind (definitions expressions)
       (parse-combinator-program program)
     (let ((*combinator-program-definitions* definitions)
           last)
-      (dolist (expr exprs last)
+      (dolist (expr expressions last)
         (setf last (reduce-term expr))
         (print-term last stream)
         (terpri stream)))))

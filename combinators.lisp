@@ -13,7 +13,7 @@
   (:documentation "A combinator in combinatory logic."))
 
 (defun make-combinator (name arity)
-  "Construct and return a COMBINATOR called NAME with ARITY."
+  "Construct and return a COMBINATOR called NAME with ARITY parameters."
   (make-instance 'combinator :name name :arity arity))
 
 (defun combinator-p (object)
