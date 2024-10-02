@@ -160,8 +160,7 @@ with the # character and they extend to the end of the line."))
   (with-output-to-string (sink)
     (loop
       (let ((char (read-char source nil)))
-        (cond ((null char)
-               (return))
+        (cond ((null char) (return))
               ((char= char #\#)
                (unread-char char source)
                (read-line source)
@@ -428,9 +427,7 @@ definition."
   (let ((stack-variable (gensym))
         (let-variables (mapcar #'variable->symbol variables)))
     `(lambda (,stack-variable)
-       (let ,(expand-bindings-for-stack-access
-              let-variables
-              stack-variable)
+       (let ,(expand-bindings-for-stack-access let-variables stack-variable)
          (declare (ignorable ,@let-variables))
          (values ,(operation-form expr variables)
                  (nthcdr ,(length variables) ,stack-variable))))))

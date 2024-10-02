@@ -81,12 +81,9 @@ bindings of variables."))
 
 (defmethod alpha-equivalent-p ((term1 lambda-variable) (term2 lambda-variable) env)
   (let ((assoc1 (cdr (assoc term1 env :test #'same-variable-p))))
-    (cond (assoc1
-           (same-variable-p assoc1 term2))
-          ((rassoc term2 env :test #'same-variable-p)
-           nil)
-          (t
-           (same-variable-p term1 term2)))))
+    (cond (assoc1 (same-variable-p assoc1 term2))
+          ((rassoc term2 env :test #'same-variable-p) nil)
+          (t (same-variable-p term1 term2)))))
 
 (defmethod alpha-equivalent-p ((term1 lambda-application) (term2 lambda-application) env)
   (and

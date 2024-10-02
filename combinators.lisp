@@ -157,25 +157,20 @@ and whose body is DEFINITION."
     "Compute the DEFMETHOD form for a combinator given its NAME, VARIABLES
 and DEFINITION."
     (labels ((expand-combinator-term (expr)
-               (cond ((member expr variables)
-                      expr)
-                     ((symbolp expr)
-                      `(get-combinator ',expr))
-                     (t
-                      (loop with curr = (expand-combinator-term (first expr))
-                            for subexpr in (rest expr)
-                            do (setf curr
-                                     `(make-combinator-application
-                                       ,curr
-                                       ,(expand-combinator-term subexpr)))
-                            finally (return curr))))))
+               (cond ((member expr variables) expr)
+                     ((symbolp expr) `(get-combinator ',expr))
+                     (t (loop with curr = (expand-combinator-term (first expr))
+                              for subexpr in (rest expr)
+                              do (setf curr
+                                       `(make-combinator-application
+                                         ,curr
+                                         ,(expand-combinator-term subexpr)))
+                              finally (return curr))))))
       (let ((stack-variable (gensym)))
         `(defmethod step-combinator-term ((term (eql (get-combinator ',name)))
                                           (,stack-variable list))
            (if (<= ,arity (length ,stack-variable))
-               (let ,(expand-bindings-for-stack-access
-                      variables
-                      stack-variable)
+               (let ,(expand-bindings-for-stack-access variables stack-variable)
                  (declare (ignorable ,@variables))
                  (values ,(expand-combinator-term definition)
                          (nthcdr ,arity ,stack-variable)))

@@ -13,7 +13,7 @@ grammars and perform operations on them such as reduction or
 translations from a system to another. Additionally you may write
 simple programs for lambda calculus or combinatory logic.
 
-## Examples
+## Synopsis
 
 ### General use
 
@@ -24,11 +24,19 @@ CL-USER> (asdf:load-system :ski)
 T
 CL-USER> (in-package :ski)
 #<PACKAGE "SKI">
+SKI>
+```
+
+Parse a combinatory logic term `KIxy`, which is shorthand for
+`((KI)x)y`. Here is its representation in the system.
+
+```
 SKI> (parse-combinator-term "KIxy")
 #<COMBINATOR-APPLICATION
   (#<COMBINATOR-APPLICATION
     (#<COMBINATOR-APPLICATION
-      (#<COMBINATOR (K) {1004F16C83}> #<COMBINATOR (I) {1004F3BC13}>)
+      (#<COMBINATOR (K) {1004F16C83}>
+       #<COMBINATOR (I) {1004F3BC13}>)
      {100237FBB3}>
     #<COMBINATOR-VARIABLE (x) {100237FBE3}>)
    {100237FC13}>
@@ -36,11 +44,25 @@ SKI> (parse-combinator-term "KIxy")
 {100237FC73}>
 NIL
 T
-SKI> (reduce-term *)
+```
+
+Here we reduce the term and sure enough the result is the variable
+`y`. I should add that combinatory logic itself doesn't have
+variables, I just added them so one can see more clearly the
+application of a combinator. The variables are basically just
+placeholder and don't have reduction rules associated with them.
+
+```
+SKI> (reduce-term (parse-combinator-term "KIxy"))
 #<COMBINATOR-VARIABLE (y) {100237FC43}>
 SKI> (print-term *)
 y
 #<COMBINATOR-VARIABLE (y) {100237FC43}>
+```
+
+Some more examples with combinatory logic and lambda calculus.
+
+```
 SKI> (print-term (reduce-term (parse-combinator-term "STTx")))
 xx
 #<COMBINATOR-APPLICATION ...>
@@ -138,6 +160,22 @@ is an example of arithmetic combinators.
 @MULT (@ADD @TWO @TWO) (@SUCC @TWO);
 ```
 
+Here is its output:
+
+```
+SKI> (run-combinator-program #p"programs/aritm.com")
+K
+KI
+KI
+V(KI)(V(KI)I)
+V(KI)(V(KI)(V(KI)I))
+V(KI)(V(KI)(V(KI)(V(KI)(V(KI)I))))
+V(KI)(V(KI)(V(KI)(V(KI)I)))
+V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)I)))))))
+V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)(V(KI)I)))))))))))
+#<COMBINATOR-APPLICATION ...>
+```
+
 ### Lambda programs
 
 In lambda programs you can define, in uppercase letters, names for
@@ -163,6 +201,16 @@ Y = (λxy.y(xxy)) (λxy.y(xxy));                   # Turing's fixed point combin
 FACT = Y G;                                      # The factorial function.
 
 FACT FIVE;                                       # The factorial of 5 as a Church numeral.
+```
+
+Here is its output:
+
+```
+SKI> (run-lambda-program #p"programs/fact.lam")
+λf.λx.f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(f(fx)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+#<LAMBDA-ABSTRACTION ...>
+SKI> (church->natural *)
+120 (7 bits, #x78, #o170, #b1111000)
 ```
 
 ### CLI
@@ -250,7 +298,8 @@ can run REPLs and evaluate programs.
 * `run-lambda-program` - run a lambda program.
 * `run-combinator-program` - run a combinator program.
 
-All symbols associated with combinators are exported.
+All symbols associated with combinators (`S`, `K`, `I`, `B`, `C`, `W`,
+`M`, etc.) are exported.
 
 ## Exercises
 
@@ -264,3 +313,9 @@ term that doesn't have a normal form.
 ## Tests
 
 Run `(asdf:test-system :ski)`.
+
+## Installation
+
+Clone this repository into a directory that ASDF and Quicklisp see
+(most likely `~/quicklisp/local-projects/`) and then run
+`(asdf:load-system :ski)` from your Lisp REPL.
