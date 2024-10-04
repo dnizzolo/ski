@@ -4,26 +4,14 @@
 
 (in-package #:ex-11-11)
 
-(defun dovekie-p (term)
-  (let ((x (make-combinator-variable #\x))
-        (y (make-combinator-variable #\y))
-        (z (make-combinator-variable #\z))
-        (w (make-combinator-variable #\w))
-        (v (make-combinator-variable #\v)))
-    (term-equal
-     (reduce-term
-      (reduce #'make-combinator-application
-              (list x y z w v)
-              :initial-value (get-combinator 'D2)))
-     (reduce-term
-      (reduce #'make-combinator-application
-              (list x y z w v)
-              :initial-value term)))))
-
 (defun solve ()
-  (loop for n from 1
-        for result = (remove-if-not
-                      #'dovekie-p
-                      (compute-full-binary-trees n (get-combinator 'B)))
-        until result
-        finally (report-terms result)))
+  (do ((dovekie-p (extensionally-equal (get-combinator 'D2)))
+       (bluebird (get-combinator 'B))
+       (n 1 (1+ n)))
+      (())
+    (let ((result (remove-if-not
+                   dovekie-p
+                   (full-binary-trees n :leaf bluebird))))
+      (when result
+        (report-terms result)
+        (return)))))

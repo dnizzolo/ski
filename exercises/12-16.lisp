@@ -4,15 +4,12 @@
 
 (in-package #:ex-12-16)
 
-(defun mockingbird-p (term)
-  (let ((x (make-combinator-variable #\x)))
-    (term-equal
-     (make-combinator-application x x)
-     (reduce-term (make-combinator-application term x)))))
-
 (defun solve ()
-  (loop with set = (list (get-combinator 'S) (get-combinator 'T))
-        for n from 1
-        for terms = (search-n-terms set n #'mockingbird-p)
-        until terms
-        finally (report-terms terms)))
+  (do ((mockingbird-p (extensionally-equal (get-combinator 'M)))
+       (allowed (list (get-combinator 'S) (get-combinator 'T)))
+       (n 1 (1+ n)))
+      (())
+    (let ((result (search-n-terms allowed n mockingbird-p)))
+      (when result
+        (report-terms result)
+        (return)))))

@@ -295,9 +295,9 @@ terms to be reduced."
                  (or (dotimes (j i)
                        (when (string= item (car (aref definitions j)))
                          (return t)))
-                     (error "The definition of ~a contains the undefined term ~a."
-                            (car (aref definitions i))
-                            item)))))
+                     (error "Undefined lambda term ~a in the definition of ~a."
+                            item
+                            (car (aref definitions i)))))))
            (mapcar (lambda (expr)
                      (substitute-definitions definitions expr))
                    expressions)))

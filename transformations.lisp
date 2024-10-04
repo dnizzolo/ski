@@ -108,14 +108,12 @@
                       (get-combinator 'S)
                       (eliminate (left term) var))
                      (eliminate (right term) var))))))
-    (let* ((arity (arity combinator))
-           (vars (loop with g = (make-variable-name-generator)
-                       repeat arity
-                       collect (make-combinator-variable (generate-name g)))))
+    (let ((vars (loop with arity = (arity combinator)
+                      with g = (make-variable-name-generator)
+                      repeat arity
+                      collect (make-combinator-variable (generate-name g)))))
       (let ((term (reduce-term
-                   (reduce #'make-combinator-application
-                           vars
-                           :initial-value combinator))))
+                   (reduce #'make-combinator-application vars :initial-value combinator))))
         (loop for var in (nreverse vars)
               do (setf term (eliminate term var))
               finally (return term))))))

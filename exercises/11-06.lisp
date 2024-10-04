@@ -4,25 +4,14 @@
 
 (in-package #:ex-11-06)
 
-(defun blackbird-p (term)
-  (let ((x (make-combinator-variable #\x))
-        (y (make-combinator-variable #\y))
-        (z (make-combinator-variable #\z))
-        (w (make-combinator-variable #\w)))
-    (term-equal
-     (reduce-term
-      (reduce #'make-combinator-application
-              (list x y z w)
-              :initial-value (get-combinator 'B1)))
-     (reduce-term
-      (reduce #'make-combinator-application
-              (list x y z w)
-              :initial-value term)))))
-
 (defun solve ()
-  (loop for n from 1
-        for result = (remove-if-not
-                      #'blackbird-p
-                      (compute-full-binary-trees n (get-combinator 'B)))
-        until result
-        finally (report-terms result)))
+  (do ((blackbird-p (extensionally-equal (get-combinator 'B1)))
+       (bluebird (get-combinator 'B))
+       (n 1 (1+ n)))
+      (())
+    (let ((result (remove-if-not
+                   blackbird-p
+                   (full-binary-trees n :leaf bluebird))))
+      (when result
+        (report-terms result)
+        (return)))))

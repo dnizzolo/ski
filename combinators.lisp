@@ -121,20 +121,25 @@ terms. Return the new term and the new stack as multiple values."))
            (read-line t nil))
          (drive (input)
            (print-term (reduce-term (parse-combinator-term input)))))
-  (loop
-    (let ((input (prompt-for-input)))
-      (cond ((null input) (return))
-            ((zerop (length input)))
-            (t (handler-case (drive input)
-                 (esrap:esrap-parse-error ()
-                   (format t "~&Parse error")))))))))
+    (loop
+      (let ((input (prompt-for-input)))
+        (cond ((null input) (return))
+              ((zerop (length input)))
+              (t (handler-case (drive input)
+                   (esrap:esrap-parse-error ()
+                     (format t "~&Parse error")))))))))
 
 (defparameter *combinators* (make-hash-table)
   "The table of interned combinators.")
 
 (defun get-combinator (name)
-  "Return the combinator called NAME, or NIL if it doesn't exist."
-  (gethash name *combinators*))
+  "Return the combinator called NAME, or signal an error if it doesn't
+exist."
+  (multiple-value-bind (value found)
+      (gethash name *combinators*)
+    (if found
+        value
+        (error "Unknown combinator ~a." name))))
 
 (defun intern-combinator (combinator)
   "Store a combinator."

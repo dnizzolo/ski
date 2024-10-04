@@ -4,24 +4,12 @@
 
 (in-package #:ex-12-12)
 
-(defun starling-p (term)
-  (let ((x (make-combinator-variable #\x))
-        (y (make-combinator-variable #\y))
-        (z (make-combinator-variable #\z)))
-    (term-equal
-     (make-combinator-application
-      (make-combinator-application x z)
-      (make-combinator-application y z))
-     (reduce-term
-      (make-combinator-application
-       (make-combinator-application
-        (make-combinator-application term x)
-        y)
-       z)))))
-
 (defun solve ()
-  (loop with set = (list (get-combinator 'B) (get-combinator 'W**) (get-combinator 'G))
-        for n from 1
-        for terms = (search-n-terms set n #'starling-p)
-        until terms
-        finally (report-terms terms)))
+  (do ((starling-p (extensionally-equal (get-combinator 'S)))
+       (allowed (list (get-combinator 'B) (get-combinator 'W**) (get-combinator 'G)))
+       (n 1 (1+ n)))
+      (())
+    (let ((result (search-n-terms allowed n starling-p)))
+      (when result
+        (report-terms result)
+        (return)))))

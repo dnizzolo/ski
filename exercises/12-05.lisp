@@ -4,17 +4,12 @@
 
 (in-package #:ex-12-05)
 
-(defun converse-warbler-p (term)
-  (let ((x (make-combinator-variable #\x))
-        (y (make-combinator-variable #\y)))
-    (term-equal
-     (make-combinator-application (make-combinator-application y x) x)
-     (reduce-term
-      (make-combinator-application (make-combinator-application term x) y)))))
-
 (defun solve ()
-  (loop with set = (list (get-combinator 'R) (get-combinator 'M2))
-        for n from 1
-        for terms = (search-n-terms set n #'converse-warbler-p)
-        until terms
-        finally (report-terms terms)))
+  (do ((converse-warbler-p (extensionally-equal (get-combinator 'W1)))
+       (allowed (list (get-combinator 'R) (get-combinator 'M2)))
+       (n 1 (1+ n)))
+      (())
+    (let ((result (search-n-terms allowed n converse-warbler-p)))
+      (when result
+        (report-terms result)
+        (return)))))
