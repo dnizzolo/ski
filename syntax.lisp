@@ -35,49 +35,30 @@
         combinator-variable
         parenthesized-combinator-term))
 
+(defun literal-combinator (text position end)
+  (let ((length-matched 0)
+        (combinator-matched nil))
+    (maphash (lambda (name combinator)
+               (let* ((lexeme (symbol-name name))
+                      (lexeme-length (length lexeme)))
+                 (when (and (> lexeme-length length-matched)
+                            (string= lexeme text
+                                     :start2 position
+                                     :end2 (min end (+ position lexeme-length))))
+                   (setf length-matched lexeme-length
+                         combinator-matched combinator))))
+             *combinators*)
+    (if combinator-matched
+        (values combinator-matched (+ position length-matched) t)
+        (values nil position "Expected a combinator"))))
+
 (esrap:defrule combinator
     (and whitespace*
-         (or "Q1"
-             "Q2"
-             "Q3"
-             "Q4"
-             "Q"
-             "B1"
-             "B2"
-             "B3"
-             "D1"
-             "D2"
-             "I2"
-             "G1"
-             "G2"
-             "K2"
-             "J1"
-             "M2"
-             "R**"
-             "R*"
-             "R"
-             "S1"
-             "F**"
-             "F*"
-             "H*"
-             "C**"
-             "C*"
-             "W**"
-             "W*"
-             "w1"
-             "V**"
-             "V*"
-             "Θ"
-             "Ψ"
-             "Φ"
-             "Γ"
-             "Ê"
-             "O"
-             (esrap:character-ranges (#\B #\M) (#\S #\W)))
+         #'literal-combinator
          whitespace*)
   (:destructure (w1 combinator w2)
     (declare (ignore w1 w2))
-    (get-combinator (intern (string combinator)))))
+    combinator))
 
 (esrap:defrule combinator-variable
     variable
