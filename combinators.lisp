@@ -150,6 +150,7 @@ exist."
 and whose body is DEFINITION."
   (let ((arity (length variables)))
     `(progn
+       (export ',name)
        (intern-combinator (make-combinator ',name ,arity))
        ,(expand-step-combinator-method name arity variables definition))))
 
