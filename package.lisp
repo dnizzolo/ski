@@ -50,6 +50,7 @@
    #:church->natural
    #:natural->barendregt
    #:barendregt->natural
+   #:combinator->lambda
    #:combinator->ski
    #:lambda->ski
    #:lambda->sk

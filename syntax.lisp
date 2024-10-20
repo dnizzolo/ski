@@ -109,8 +109,8 @@
     (declare (ignore w1 lambda dot w2))
     (reduce #'make-lambda-abstraction
             variables
-            :initial-value body
-            :from-end t)))
+            :from-end t
+            :initial-value body)))
 
 (esrap:defrule lambda-variable
     variable
@@ -208,8 +208,8 @@ with the # character and they extend to the end of the line."))
     (declare (ignore w1 lambda dot w2))
     (reduce #'make-lambda-abstraction
             variables
-            :initial-value body
-            :from-end t)))
+            :from-end t
+            :initial-value body)))
 
 (esrap:defrule parenthesized-lambda-program-term
     (and whitespace*

@@ -285,6 +285,8 @@ can run REPLs and evaluate programs.
   according to the encoding used in the book.
 * `barendregt->natural` - return the natural number represented by a
   numeral according to the encoding used in the book.
+* `combinator->lambda` - convert a combinator to its equivalent lambda
+  abstraction.
 * `combinator->ski` - express a combinator using only the S, K, and I
   combinators.
 * `lambda->ski` - traduce a term from lambda calculus to SKI calculus.

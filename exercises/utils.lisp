@@ -75,8 +75,8 @@ satisfy CRITERION."
   "Return a function that takes a TERM and returns non-NIL if TERM is
 functionally equivalent to REFERENCE. REFERENCE must be a combinatory
 logic object with an ARITY."
-  (let ((vars (loop with arity = (arity reference)
-                    with g = (make-variable-name-generator)
+  (let ((vars (loop with g = (make-variable-name-generator)
+                    with arity = (arity reference)
                     repeat arity
                     collect (make-combinator-variable (generate-name g)))))
     (lambda (term)

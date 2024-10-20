@@ -1,4 +1,4 @@
-LISP = sbcl
+LISP := sbcl
 
 ski: base.lisp combinators.lisp lambda.lisp main.lisp package.lisp syntax.lisp transformations.lisp ski.asd
 	$(LISP) --eval '(asdf:load-system :ski)' \
