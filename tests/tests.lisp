@@ -160,12 +160,37 @@
       (parse-combinator-term "K(SKK)")
       (reduce-term (lambda->sk (parse-lambda-term "(λn.n(λx.λxy.y)(λxy.x))λfx.fx")))))
 
+(define-test combinator->lambda-test
+  :depends-on (combinator-reduction-test parse-lambda-term-test lambda-equality-test)
+  (is term-equal
+      (combinator->lambda (get-combinator 'M))
+      (parse-lambda-term "λx.xx"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'B))
+      (parse-lambda-term "λxyz.x(yz)"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'L))
+      (parse-lambda-term "λxy.x(yy)"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'W))
+      (parse-lambda-term "λxy.xyy"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'K))
+      (parse-lambda-term "λxy.x"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'I))
+      (parse-lambda-term "λx.x"))
+  (is term-equal
+      (combinator->lambda (get-combinator 'S))
+      (parse-lambda-term "λxyz.xz(yz)")))
+
 (define-test combinator->ski-test
-  :depends-on (parse-combinator-term-test)
+  :depends-on (combinator-reduction-test)
   (macrolet ((is-ski (combinator)
                (let ((collect-variables-form
                        `(loop with g = (make-variable-name-generator)
-                              repeat (arity (get-combinator ,combinator))
+                              with arity = (arity (get-combinator ,combinator))
+                              repeat arity
                               collect (make-combinator-variable (generate-name g)))))
                  `(is term-equal
                       (reduce-term

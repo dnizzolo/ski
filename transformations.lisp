@@ -1,5 +1,27 @@
 (in-package #:ski)
 
+(defun combinator->lambda (combinator)
+  "Convert COMBINATOR to its representation as a lambda abstraction."
+  (labels ((term->lambda (term)
+             (etypecase term
+               (combinator-application
+                (make-lambda-application
+                 (term->lambda (left term))
+                 (term->lambda (right term))))
+               (combinator-variable
+                (make-lambda-variable (name term))))))
+    (let* ((variables (loop with g = (make-variable-name-generator)
+                            with arity = (arity combinator)
+                            repeat arity
+                            collect (make-combinator-variable (generate-name g))))
+           (term (reduce-term (reduce #'make-combinator-application
+                                      variables
+                                      :initial-value combinator))))
+      (reduce #'make-lambda-abstraction
+              (mapcar (lambda (v) (make-lambda-variable (name v))) variables)
+              :from-end t
+              :initial-value (term->lambda term)))))
+
 (defgeneric lambda->ski (term)
   (:documentation "Convert a lambda calculus TERM to its corresponding SKI calculus term."))
 
@@ -108,8 +130,8 @@
                       (get-combinator 'S)
                       (eliminate (left term) var))
                      (eliminate (right term) var))))))
-    (let ((vars (loop with arity = (arity combinator)
-                      with g = (make-variable-name-generator)
+    (let ((vars (loop with g = (make-variable-name-generator)
+                      with arity = (arity combinator)
                       repeat arity
                       collect (make-combinator-variable (generate-name g)))))
       (let ((term (reduce-term

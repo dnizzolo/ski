@@ -13,8 +13,6 @@ grammars and perform operations on them such as reduction or
 translations from a system to another. Additionally you may write
 simple programs for lambda calculus or combinatory logic.
 
-## Synopsis
-
 ### General use
 
 Load the system with ASDF and enter the `SKI` package:
@@ -27,8 +25,8 @@ CL-USER> (in-package :ski)
 SKI>
 ```
 
-Parse a combinatory logic term `KIxy`, which is shorthand for
-`((KI)x)y`. Here is its representation in the system.
+Parse a combinatory logic term KIxy, which is shorthand for ((KI)x)y.
+Here is its representation in the system:
 
 ```
 SKI> (parse-combinator-term "KIxy")
@@ -46,11 +44,11 @@ NIL
 T
 ```
 
-Here we reduce the term and sure enough the result is the variable
-`y`. I should add that combinatory logic itself doesn't have
-variables, I just added them so one can see more clearly the
-application of a combinator. The variables are basically just
-placeholder and don't have reduction rules associated with them.
+Now we reduce the term and sure enough the result is the variable y. I
+should add that combinatory logic itself doesn't have variables, I
+just added them so one can see more clearly the application of a
+combinator. The variables are basically just placeholders and don't
+have reduction rules associated with them.
 
 ```
 SKI> (reduce-term (parse-combinator-term "KIxy"))
@@ -60,7 +58,7 @@ y
 #<COMBINATOR-VARIABLE (y) {100237FC43}>
 ```
 
-Some more examples with combinatory logic and lambda calculus.
+Some more examples with combinatory logic and lambda calculus:
 
 ```
 SKI> (print-term (reduce-term (parse-combinator-term "STTx")))
@@ -89,7 +87,7 @@ S(K(SI))(SII)
 ### REPL for combinators
 
 A REPL for combinatory logic is also provided, in it you can use the
-defined combinators.
+defined combinators, here is an example:
 
 ```
 CL-USER> (asdf:load-system :ski)
@@ -131,7 +129,7 @@ for the fixed point principle which is used in the formal discussion
 in the book. Defined combinators names must be made up of uppercase
 letters and start with a `@`. After the definitions (if any, they're
 optional) you must provide some combinatory logic term to reduce. Here
-is an example of arithmetic combinators.
+is an example of arithmetic combinators:
 
 ```
 @ZERO = I;                      # The number 0, as a numeral.
@@ -184,7 +182,7 @@ subsequent definitions and lambda terms. Definitions can't be
 recursive, they're just a way to name a lambda term to make other
 lambda terms more readable. After the definitions (if any, they're
 optional) you must provide some lambda terms to reduce. Here is an
-example of a lambda program that computes the factorial of 5.
+example of a lambda program that computes the factorial of 5:
 
 ```
 ONE = λfx.fx;                                    # The number 1 as a Church numeral.
@@ -203,7 +201,8 @@ FACT = Y G;                                      # The factorial function.
 FACT FIVE;                                       # The factorial of 5 as a Church numeral.
 ```
 
-Here is its output:
+Here is its output, where we can see that the computed numeral is in
+fact the representation of 120 as a Church numeral:
 
 ```
 SKI> (run-lambda-program #p"programs/fact.lam")
@@ -285,6 +284,8 @@ can run REPLs and evaluate programs.
   according to the encoding used in the book.
 * `barendregt->natural` - return the natural number represented by a
   numeral according to the encoding used in the book.
+* `combinator->lambda` - convert a combinator to its equivalent lambda
+  abstraction.
 * `combinator->ski` - express a combinator using only the S, K, and I
   combinators.
 * `lambda->ski` - traduce a term from lambda calculus to SKI calculus.
@@ -312,7 +313,8 @@ term that doesn't have a normal form.
 
 ## Tests
 
-Run `(asdf:test-system :ski)`.
+Run `(asdf:test-system :ski)` from your Lisp REPL or `make test` from
+the command line.
 
 ## Installation
 
