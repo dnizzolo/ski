@@ -157,22 +157,37 @@ with the # character and they extend to the end of the line."))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Lambda calculus programs.
 
+(defvar *lambda-program-definitions* nil
+  "The definitions in a lambda program to keep track of as we parse
+ it in order to resolve references to definitions in terms.")
+
 (esrap:defrule lambda-program
-    (and (* lambda-definition)
+    (and (* lambda-program-definition)
          (+ (and lambda-program-term ";" whitespace*)))
   (:destructure (definitions exprs)
-    (list (coerce definitions 'vector)
-          (mapcar #'first exprs))))
+    (declare (ignore definitions))
+    (mapcar #'first exprs)))
 
-(esrap:defrule lambda-name
+(esrap:defrule lambda-program-definition-name
     (and whitespace*
          (+ (esrap:character-ranges (#\A #\Z)))
          whitespace*)
   (:text t))
 
-(esrap:defrule lambda-definition
+;; When a name appears in term context we must check that it was
+;; previously defined, in which case we return the corresponding pure
+;; lambda calculus term, otherwise an error is signaled.
+(esrap:defrule lambda-program-definition-as-term
+    lambda-program-definition-name
+  (:lambda (name)
+    (loop for definition in *lambda-program-definitions*
+          when (string= name (name definition))
+            return (term definition)
+          finally (error "Undefined term ~a in lambda program." name))))
+
+(esrap:defrule lambda-program-definition
     (and whitespace*
-         lambda-name
+         lambda-program-definition-name
          whitespace*
          "="
          whitespace*
@@ -182,7 +197,8 @@ with the # character and they extend to the end of the line."))
          whitespace*)
   (:destructure (w1 name w2 eq w3 expr w4 semicolon w5)
     (declare (ignore w1 w2 eq w3 w4 semicolon w5))
-    (cons (coerce name 'string) expr)))
+    (push (make-lambda-program-definition name expr)
+          *lambda-program-definitions*)))
 
 (esrap:defrule lambda-program-term
     (and (esrap:? lambda-program-term) lambda-program-factor)
@@ -194,7 +210,7 @@ with the # character and they extend to the end of the line."))
 (esrap:defrule lambda-program-factor
     (or lambda-program-abstraction
         lambda-variable
-        lambda-name
+        lambda-program-definition-as-term
         parenthesized-lambda-program-term))
 
 (esrap:defrule lambda-program-abstraction
@@ -221,45 +237,28 @@ with the # character and they extend to the end of the line."))
     (declare (ignore w1 open-parenthesis close-parenthesis w2))
     term))
 
-(defgeneric lambda-names (term)
-  (:documentation "Return all unresolved names in the lambda calculus TERM."))
+(defclass lambda-program-definition (lambda-term)
+  ((name :initarg :name :accessor name)
+   (term :initarg :term :accessor term))
+  (:documentation "A lambda calculus term defined in a program."))
 
-(defmethod lambda-names ((term string))
-  (list term))
+(defun make-lambda-program-definition (name term)
+  "Construct and return a LAMBDA-PROGRAM-DEFINITION called NAME that
+ stands for TERM."
+  (make-instance 'lambda-program-definition :name name :term term))
 
-(defmethod lambda-names ((term lambda-variable))
-  nil)
+(defun lambda-program-definition-p (object)
+  "Return true if OBJECT is a LAMBDA-PROGRAM-DEFINITION, and NIL
+otherwise."
+  (typep object 'lambda-program-definition))
 
-(defmethod lambda-names ((term lambda-abstraction))
-  (lambda-names (body term)))
+(defmethod print-object ((object lambda-program-definition) stream)
+  (with-slots (name) object
+    (print-unreadable-object (object stream :type t :identity t)
+      (format stream "(~a)" name))))
 
-(defmethod lambda-names ((term lambda-application))
-  (append (lambda-names (left term)) (lambda-names (right term))))
-
-(defgeneric substitute-definitions (definitions term)
-  (:documentation "Recursively replace all occurrences of names in the lambda calculus
-TERM with their DEFINITIONS."))
-
-(defmethod substitute-definitions (definitions (term lambda-variable))
-  term)
-
-(defmethod substitute-definitions (definitions (term string))
-  (substitute-definitions
-   definitions
-   (cdr (find term definitions :key #'car :test #'string=))))
-
-(defmethod substitute-definitions (definitions (term lambda-abstraction))
-  (with-accessors ((variable variable) (body body))
-      term
-    (make-lambda-abstraction
-     variable
-     (substitute-definitions definitions body))))
-
-(defmethod substitute-definitions (definitions (term lambda-application))
-  (with-accessors ((left left) (right right)) term
-    (make-lambda-application
-     (substitute-definitions definitions left)
-     (substitute-definitions definitions right))))
+(defmethod print-term ((term lambda-program-definition) &optional (stream *standard-output*))
+  (princ (name term) stream))
 
 (defun parse-lambda-program (input)
   "Parse a lambda program from INPUT."
@@ -268,23 +267,8 @@ TERM with their DEFINITIONS."))
 (defun build-lambda-program (program)
   "Parse the lambda PROGRAM and return a list of pure lambda calculus
 terms to be reduced."
-  (flet ((build (definitions expressions)
-           (dotimes (i (length definitions))
-             (let* ((curr-expr (cdr (aref definitions i)))
-                    (items (lambda-names curr-expr)))
-               (dolist (item items)
-                 (or (dotimes (j i)
-                       (when (string= item (car (aref definitions j)))
-                         (return t)))
-                     (error "Undefined lambda term ~a in the definition of ~a."
-                            item
-                            (car (aref definitions i)))))))
-           (mapcar (lambda (expr)
-                     (substitute-definitions definitions expr))
-                   expressions)))
-    (destructuring-bind (definitions expressions)
-        (parse-lambda-program program)
-      (build definitions expressions))))
+  (let ((*lambda-program-definitions* nil))
+    (parse-lambda-program program)))
 
 (defun run-lambda-program (program &optional (stream *standard-output*))
   "Parse and run the lambda PROGRAM. Return the last reduced term. Print
@@ -299,7 +283,7 @@ each reduced term to STREAM."
 ;;;; Combinatory logic programs.
 
 (esrap:defrule combinator-program
-    (and (* combinator-definition)
+    (and (* combinator-program-definition)
          (+ (and combinator-program-term ";" whitespace*)))
   (:destructure (definitions exprs)
     (let ((definitions-table (make-hash-table :test #'equal)))
@@ -314,12 +298,12 @@ each reduced term to STREAM."
          whitespace*)
   (:destructure (w1 at name w2)
     (declare (ignore w1 at w2))
-    (make-combinator-definition
+    (make-combinator-program-definition
      (coerce name 'string)
      nil
      nil)))
 
-(esrap:defrule combinator-definition
+(esrap:defrule combinator-program-definition
     (and whitespace*
          combinator-name
          (* combinator-variable)
@@ -331,7 +315,7 @@ each reduced term to STREAM."
          whitespace*)
   (:destructure (w1 name vars eq w2 expr w3 semicolon w4)
     (declare (ignore w1 eq w2 w3 semicolon w4))
-    (make-combinator-definition
+    (make-combinator-program-definition
      (name name)
      (length vars)
      (compile nil (expand-operation vars expr)))))
@@ -359,67 +343,66 @@ each reduced term to STREAM."
     (declare (ignore w1 open-parenthesis close-parenthesis w2))
     term))
 
-(defclass combinator-definition (combinator-term)
+(defclass combinator-program-definition (combinator-term)
   ((name :initarg :name :accessor name)
    (arity :initarg :arity :accessor arity)
    (operation :initarg :operation :accessor operation))
   (:documentation "A combinatory logic term defined in a program."))
 
-(defun make-combinator-definition (name arity operation)
-  "Construct and return a COMBINATOR-DEFINITION that refers to NAME has
-ARITY and performs OPERATION."
-  (make-instance 'combinator-definition
+(defun make-combinator-program-definition (name arity operation)
+  "Construct and return a COMBINATOR-PROGRAM-DEFINITION that refers to
+ NAME has ARITY and performs OPERATION."
+  (make-instance 'combinator-program-definition
                  :name name
                  :arity arity
                  :operation operation))
 
-(defun combinator-definition-p (object)
-  "Return true if OBJECT is a COMBINATOR-DEFINITION, and NIL otherwise."
-  (typep object 'combinator-definition))
+(defun combinator-program-definition-p (object)
+  "Return true if OBJECT is a COMBINATOR-PROGRAM-DEFINITION, and NIL
+otherwise."
+  (typep object 'combinator-program-definition))
 
-(defmethod print-object ((object combinator-definition) stream)
+(defmethod print-object ((object combinator-program-definition) stream)
   (with-slots (name) object
     (print-unreadable-object (object stream :type t :identity t)
       (format stream "(~a)" name))))
 
-(defmethod print-term ((term combinator-definition) &optional (stream *standard-output*))
+(defmethod print-term ((term combinator-program-definition) &optional (stream *standard-output*))
   (format stream "@~a" (name term))
   term)
-
-(defgeneric operation-form (term variables)
-  (:documentation "Compute the form of a combinator operation."))
-
-(defmethod operation-form ((term combinator-term) variables)
-  term)
-
-(defmethod operation-form ((term combinator-variable) variables)
-  (if (member term variables :test #'same-variable-p)
-      (variable->symbol term)
-      term))
-
-(defmethod operation-form ((term combinator-application) variables)
-  `(make-combinator-application
-    ,(operation-form (left term) variables)
-    ,(operation-form (right term) variables)))
 
 (defun expand-operation (variables expr)
   "Compute the lambda form that implements the operation of a combinator
 definition."
-  (let ((stack-variable (gensym))
-        (let-variables (mapcar #'variable->symbol variables)))
-    `(lambda (,stack-variable)
-       (let ,(expand-bindings-for-stack-access let-variables stack-variable)
-         (declare (ignorable ,@let-variables))
-         (values ,(operation-form expr variables)
-                 (nthcdr ,(length variables) ,stack-variable))))))
+  (labels ((operation-form (term)
+             (etypecase term
+               (combinator-variable
+                (if (member term variables :test #'same-variable-p)
+                    (variable->symbol term)
+                    term))
+               (combinator-application
+                `(make-combinator-application
+                  ,(operation-form (left term))
+                  ,(operation-form (right term))))
+               (combinator-term term))))
+    (let ((stack-variable (gensym))
+          (let-variables (mapcar #'variable->symbol variables)))
+      `(lambda (,stack-variable)
+         (let ,(expand-bindings-for-stack-access let-variables stack-variable)
+           (declare (ignorable ,@let-variables))
+           (values ,(operation-form expr)
+                   (nthcdr ,(length variables) ,stack-variable)))))))
 
 (defparameter *combinator-program-definitions* nil
-  "The table of defined combinatory logic terms in a combinator program.")
+  "The table of defined combinatory logic terms in a combinator
+ program to be consulted when running the program.")
 
-(defmethod step-combinator-term ((term combinator-definition) (stack list))
-  (let ((definition (gethash (name term) *combinator-program-definitions*)))
+(defmethod step-combinator-term ((term combinator-program-definition) (stack list))
+  (let ((definition (gethash
+                     (name term)
+                     *combinator-program-definitions*)))
     (cond ((null definition)
-           (error "Undefined combinator term ~a." term))
+           (error "Undefined term ~a in combinator program." term))
           ((<= (arity definition) (length stack))
            (funcall (operation definition) stack))
           (t (call-next-method)))))
