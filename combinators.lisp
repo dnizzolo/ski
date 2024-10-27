@@ -150,9 +150,15 @@ found."
 and whose body is DEFINITION."
   (let ((arity (length variables)))
     `(progn
-       (export ',name)
        (intern-combinator (make-combinator ',name ,arity))
        ,(expand-step-combinator-method name arity variables definition))))
+
+(defmacro define-exported-combinator (name variables definition)
+  "Define a new combinator called NAME that takes VARIABLES as parameters
+and whose body is DEFINITION and export its symbol."
+  `(progn
+     (export ',name)
+     (define-combinator ,name ,variables ,definition)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun expand-bindings-for-stack-access (variables stack-variable)
@@ -182,56 +188,56 @@ and DEFINITION."
                          (nthcdr ,arity ,stack-variable)))
                (call-next-method)))))))
 
-(define-combinator S (x y z) (x z (y z)))                     ; Starling.
-(define-combinator S1 (x y z) (y z (x z)))
-(define-combinator K (x y) x)                                 ; Kestrel.
-(define-combinator K2 (x y) y)
-(define-combinator I (x) x)                                   ; Identity bird.
-(define-combinator I2 (x) (x I I))
-(define-combinator B (x y z) (x (y z)))                       ; Bluebird.
-(define-combinator B1 (x y z w) (x (y z w)))                  ; Blackbird.
-(define-combinator B2 (x y z w v) (x (y z w v)))              ; Bunting.
-(define-combinator B3 (x y z w) (x (y (z w))))                ; Becard.
-(define-combinator C (x y z) (x z y))                         ; Cardinal.
-(define-combinator C* (x y z w) (x y w z))                    ; Cardinal once removed.
-(define-combinator C** (x y z w v) (x y z v w))               ; Cardinal twice removed.
-(define-combinator D (x y z w) (x y (z w)))                   ; Dove.
-(define-combinator D1 (x y z w v) (x y z (w v)))              ; Dickcissel.
-(define-combinator D2 (x y z w v) (x (y z) (w v)))            ; Dovekie.
-(define-combinator E (x y z w v) (x y (z w v)))               ; Eagle.
-(define-combinator Ê (x y z w v u q) (x (y z w) (v u q)))     ; Bald eagle.
-(define-combinator F (x y z) (z y x))                         ; Finch.
-(define-combinator F* (x y z w) (x w z y))                    ; Finch once removed.
-(define-combinator F** (x y z w v) (x y v w z))               ; Finch twice removed.
-(define-combinator G (x y z w) (x w (y z)))                   ; Goldfinch.
-(define-combinator G1 (x y z w v) (x y v (z w)))
-(define-combinator G2 (x y z w) (x w (x w) (y z)))
-(define-combinator H (x y z) (x y z y))                       ; Hummingbird.
-(define-combinator H* (x y z w) (x y z w z))                  ; Hummingbird once removed.
-(define-combinator J (x y z w) (x y (x w z)))                 ; Jay.
-(define-combinator J1 (x y z w) (y x (w x z)))
-(define-combinator L (x y) (x (y y)))                         ; Lark.
-(define-combinator M (x) (x x))                               ; Mockingbird.
-(define-combinator M2 (x y) (x y (x y)))                      ; Double mockingbird.
-(define-combinator O (x y) (y (x y)))                         ; Owl.
-(define-combinator Q (x y z) (y (x z)))                       ; Queer bird.
-(define-combinator Q1 (x y z) (x (z y)))                      ; Quixotic bird.
-(define-combinator Q2 (x y z) (y (z x)))                      ; Quizzical bird.
-(define-combinator Q3 (x y z) (z (x y)))                      ; Quirky bird.
-(define-combinator Q4 (x y z) (z (y x)))                      ; Quacky bird.
-(define-combinator R (x y z) (y z x))                         ; Robin.
-(define-combinator R* (x y z w) (x z w y))                    ; Robin once removed.
-(define-combinator R** (x y z w v) (x y w v z))               ; Robin twice removed.
-(define-combinator Θ (x) (x (Θ x)))                           ; Sage bird.
-(define-combinator T (x y) (y x))                             ; Thrush.
-(define-combinator U (x y) (y (x x y)))                       ; Turing bird.
-(define-combinator V (x y z) (z x y))                         ; Vireo.
-(define-combinator V* (x y z w) (x w y z))                    ; Vireo once removed.
-(define-combinator V** (x y z w v) (x y v z w))               ; Vireo twice removed.
-(define-combinator W (x y) (x y y))                           ; Warbler.
-(define-combinator W1 (x y) (y x x))                          ; Converse warbler.
-(define-combinator W* (x y z) (x y z z))                      ; Warbler once removed.
-(define-combinator W** (x y z w) (x y z w w))                 ; Warbler twice removed.
-(define-combinator Φ (x y z w) (x (y w) (z w)))               ; Phoenix bird.
-(define-combinator Ψ (x y z w) (x (y z) (y w)))
-(define-combinator Γ (x y z w v) (y (z w) (x y w v)))
+(define-exported-combinator S (x y z) (x z (y z)))                   ; Starling.
+(define-exported-combinator S1 (x y z) (y z (x z)))
+(define-exported-combinator K (x y) x)                               ; Kestrel.
+(define-exported-combinator K2 (x y) y)
+(define-exported-combinator I (x) x)                                 ; Identity bird.
+(define-exported-combinator I2 (x) (x I I))
+(define-exported-combinator B (x y z) (x (y z)))                     ; Bluebird.
+(define-exported-combinator B1 (x y z w) (x (y z w)))                ; Blackbird.
+(define-exported-combinator B2 (x y z w v) (x (y z w v)))            ; Bunting.
+(define-exported-combinator B3 (x y z w) (x (y (z w))))              ; Becard.
+(define-exported-combinator C (x y z) (x z y))                       ; Cardinal.
+(define-exported-combinator C* (x y z w) (x y w z))                  ; Cardinal once removed.
+(define-exported-combinator C** (x y z w v) (x y z v w))             ; Cardinal twice removed.
+(define-exported-combinator D (x y z w) (x y (z w)))                 ; Dove.
+(define-exported-combinator D1 (x y z w v) (x y z (w v)))            ; Dickcissel.
+(define-exported-combinator D2 (x y z w v) (x (y z) (w v)))          ; Dovekie.
+(define-exported-combinator E (x y z w v) (x y (z w v)))             ; Eagle.
+(define-exported-combinator Ê (x y z w v u q) (x (y z w) (v u q)))   ; Bald eagle.
+(define-exported-combinator F (x y z) (z y x))                       ; Finch.
+(define-exported-combinator F* (x y z w) (x w z y))                  ; Finch once removed.
+(define-exported-combinator F** (x y z w v) (x y v w z))             ; Finch twice removed.
+(define-exported-combinator G (x y z w) (x w (y z)))                 ; Goldfinch.
+(define-exported-combinator G1 (x y z w v) (x y v (z w)))
+(define-exported-combinator G2 (x y z w) (x w (x w) (y z)))
+(define-exported-combinator H (x y z) (x y z y))                     ; Hummingbird.
+(define-exported-combinator H* (x y z w) (x y z w z))                ; Hummingbird once removed.
+(define-exported-combinator J (x y z w) (x y (x w z)))               ; Jay.
+(define-exported-combinator J1 (x y z w) (y x (w x z)))
+(define-exported-combinator L (x y) (x (y y)))                       ; Lark.
+(define-exported-combinator M (x) (x x))                             ; Mockingbird.
+(define-exported-combinator M2 (x y) (x y (x y)))                    ; Double mockingbird.
+(define-exported-combinator O (x y) (y (x y)))                       ; Owl.
+(define-exported-combinator Q (x y z) (y (x z)))                     ; Queer bird.
+(define-exported-combinator Q1 (x y z) (x (z y)))                    ; Quixotic bird.
+(define-exported-combinator Q2 (x y z) (y (z x)))                    ; Quizzical bird.
+(define-exported-combinator Q3 (x y z) (z (x y)))                    ; Quirky bird.
+(define-exported-combinator Q4 (x y z) (z (y x)))                    ; Quacky bird.
+(define-exported-combinator R (x y z) (y z x))                       ; Robin.
+(define-exported-combinator R* (x y z w) (x z w y))                  ; Robin once removed.
+(define-exported-combinator R** (x y z w v) (x y w v z))             ; Robin twice removed.
+(define-exported-combinator Θ (x) (x (Θ x)))                         ; Sage bird.
+(define-exported-combinator T (x y) (y x))                           ; Thrush.
+(define-exported-combinator U (x y) (y (x x y)))                     ; Turing bird.
+(define-exported-combinator V (x y z) (z x y))                       ; Vireo.
+(define-exported-combinator V* (x y z w) (x w y z))                  ; Vireo once removed.
+(define-exported-combinator V** (x y z w v) (x y v z w))             ; Vireo twice removed.
+(define-exported-combinator W (x y) (x y y))                         ; Warbler.
+(define-exported-combinator W1 (x y) (y x x))                        ; Converse warbler.
+(define-exported-combinator W* (x y z) (x y z z))                    ; Warbler once removed.
+(define-exported-combinator W** (x y z w) (x y z w w))               ; Warbler twice removed.
+(define-exported-combinator Φ (x y z w) (x (y w) (z w)))             ; Phoenix bird.
+(define-exported-combinator Ψ (x y z w) (x (y z) (y w)))
+(define-exported-combinator Γ (x y z w v) (y (z w) (x y w v)))
