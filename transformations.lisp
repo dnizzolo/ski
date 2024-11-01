@@ -8,6 +8,8 @@
                 (make-lambda-application
                  (term->lambda (left term))
                  (term->lambda (right term))))
+               (combinator
+                (combinator->lambda term))
                (combinator-variable
                 (make-lambda-variable (name term))))))
     (let* ((variables (loop with g = (make-variable-name-generator)

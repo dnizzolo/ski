@@ -241,3 +241,4 @@ and DEFINITION."
 (define-exported-combinator Φ (x y z w) (x (y w) (z w)))             ; Phoenix bird.
 (define-exported-combinator Ψ (x y z w) (x (y z) (y w)))
 (define-exported-combinator Γ (x y z w v) (y (z w) (x y w v)))
+(define-exported-combinator Ꙇ (f) (f S K))
