@@ -4,45 +4,46 @@
   (:export
    #:term
    #:term-p
-   #:variable
-   #:name
-   #:variable-p
-   #:same-variable-p
-   #:make-variable-name-generator
-   #:generate-name
    #:application
+   #:application-p
    #:left
    #:right
-   #:application-p
+   #:make-variable-name-generator
+   #:generate-name
+   #:name
+   #:variable
+   #:variable-p
+   #:same-variable-p
    #:occurs-free-p
    #:print-term
-   #:term-equal
    #:reduce-term
-   #:combinator-driver-loop
+   #:term-equal
    #:combinator-term
    #:combinator-term-p
    #:combinator
-   #:arity
    #:combinator-p
-   #:make-combinator-variable
-   #:combinator-variable-p
-   #:make-combinator-application
-   #:combinator-application-p
    #:define-combinator
    #:get-combinator
+   #:arity
+   #:make-combinator-application
+   #:combinator-application-p
+   #:make-combinator-variable
+   #:combinator-variable-p
+   #:combinator-driver-loop
    #:lambda-term
    #:lambda-term-p
-   #:make-lambda-variable
-   #:lambda-variable-p
-   #:make-lambda-application
-   #:lambda-application-p
    #:make-lambda-abstraction
    #:lambda-abstraction-p
    #:body
+   #:make-lambda-application
+   #:lambda-application-p
+   #:make-lambda-variable
+   #:lambda-variable-p
    #:free-variables
    #:bound-variables
-   #:substitute-avoiding-capture
    #:lambda-combinator-p
+   #:*lambda-reduction-strategy*
+   #:substitute-avoiding-capture
    #:lambda-driver-loop
    #:sk->goedel
    #:goedel->sk

@@ -393,14 +393,12 @@ definition."
            (values ,(operation-form expr)
                    (nthcdr ,(length variables) ,stack-variable)))))))
 
-(defparameter *combinator-program-definitions* nil
+(defvar *combinator-program-definitions* nil
   "The table of defined combinatory logic terms in a combinator
  program to be consulted when running the program.")
 
 (defmethod step-combinator-term ((term combinator-program-definition) (stack list))
-  (let ((definition (gethash
-                     (name term)
-                     *combinator-program-definitions*)))
+  (let ((definition (gethash (name term) *combinator-program-definitions*)))
     (cond ((null definition)
            (error "Undefined term ~a in combinator program." term))
           ((<= (arity definition) (length stack))

@@ -199,36 +199,101 @@ variables while doing so."))
                  target
                  replacement))))))))
 
-(defgeneric beta-reduce (term)
-  (:documentation "Perform a beta reduction on TERM. Return, as multiple values, the new
-term and a generalized boolean that is true if a step took place and
-NIL otherwise."))
+(defvar *lambda-reduction-strategy* :normal-order
+  "The reduction strategy to use when reducing lambda calculus terms.
+Must be a one of the following keywords: :NORMAL-ORDER,
+:APPLICATIVE-ORDER, :CALL-BY-NAME, :CALL-BY-VALUE.")
 
-(defmethod beta-reduce ((term lambda-variable))
+(defgeneric beta-reduce (term strategy)
+  (:documentation "Perform a beta reduction on TERM using the reduction STRATEGY. Return,
+as multiple values, the new term and a generalized boolean that is
+true if a step took place and NIL otherwise."))
+
+(defmethod beta-reduce ((term lambda-variable) strategy)
   (values term nil))
 
-(defmethod beta-reduce ((term lambda-abstraction))
+(defmethod beta-reduce ((term lambda-abstraction) (strategy (eql :normal-order)))
   (multiple-value-bind (new-body stepped)
-      (beta-reduce (body term))
+      (beta-reduce (body term) strategy)
     (values (make-lambda-abstraction (variable term) new-body)
             stepped)))
 
-(defmethod beta-reduce ((term lambda-application))
+(defmethod beta-reduce ((term lambda-application) (strategy (eql :normal-order)))
   (with-accessors ((left left) (right right)) term
     (if (lambda-abstraction-p left)
-        (values (substitute-avoiding-capture (body left) (variable left) right)
+        (values (substitute-avoiding-capture
+                 (body left)
+                 (variable left)
+                 right)
                 t)
         (multiple-value-bind (new-left stepped-left)
-            (beta-reduce left)
+            (beta-reduce left strategy)
           (multiple-value-bind (new-right stepped-right)
-              (beta-reduce right)
+              (beta-reduce right strategy)
+            (values (make-lambda-application new-left new-right)
+                    (or stepped-left stepped-right)))))))
+
+(defmethod beta-reduce ((term lambda-abstraction) (strategy (eql :applicative-order)))
+  (multiple-value-bind (new-body stepped)
+      (beta-reduce (body term) strategy)
+    (values (make-lambda-abstraction (variable term) new-body)
+            stepped)))
+
+(defmethod beta-reduce ((term lambda-application) (strategy (eql :applicative-order)))
+  (with-accessors ((left left) (right right)) term
+    (if (lambda-abstraction-p left)
+        (values (substitute-avoiding-capture
+                 (reduce-term (body left))
+                 (variable left)
+                 (reduce-term right))
+                t)
+        (multiple-value-bind (new-left stepped-left)
+            (beta-reduce left strategy)
+          (multiple-value-bind (new-right stepped-right)
+              (beta-reduce right strategy)
+            (values (make-lambda-application new-left new-right)
+                    (or stepped-left stepped-right)))))))
+
+(defmethod beta-reduce ((term lambda-abstraction) (strategy (eql :call-by-name)))
+  (values term nil))
+
+(defmethod beta-reduce ((term lambda-application) (strategy (eql :call-by-name)))
+  (with-accessors ((left left) (right right)) term
+    (if (lambda-abstraction-p left)
+        (values (substitute-avoiding-capture
+                 (body left)
+                 (variable left)
+                 right)
+                t)
+        (multiple-value-bind (new-left stepped-left)
+            (beta-reduce left strategy)
+          (multiple-value-bind (new-right stepped-right)
+              (beta-reduce right strategy)
+            (values (make-lambda-application new-left new-right)
+                    (or stepped-left stepped-right)))))))
+
+(defmethod beta-reduce ((term lambda-abstraction) (strategy (eql :call-by-value)))
+  (values term nil))
+
+(defmethod beta-reduce ((term lambda-application) (strategy (eql :call-by-value)))
+  (with-accessors ((left left) (right right)) term
+    (if (lambda-abstraction-p left)
+        (values (substitute-avoiding-capture
+                 (body left)
+                 (variable left)
+                 (reduce-term right))
+                t)
+        (multiple-value-bind (new-left stepped-left)
+            (beta-reduce left strategy)
+          (multiple-value-bind (new-right stepped-right)
+              (beta-reduce right strategy)
             (values (make-lambda-application new-left new-right)
                     (or stepped-left stepped-right)))))))
 
 (defmethod reduce-term ((term lambda-term))
   (loop
     (multiple-value-bind (new-term stepped)
-        (beta-reduce term)
+        (beta-reduce term *lambda-reduction-strategy*)
       (unless stepped
         (return term))
       (setf term new-term))))
@@ -241,10 +306,10 @@ NIL otherwise."))
            (read-line t nil))
          (drive (input)
            (print-term (reduce-term (parse-lambda-term input)))))
-  (loop
-    (let ((input (prompt-for-input)))
-      (cond ((null input) (return))
-            ((zerop (length input)))
-            (t (handler-case (drive input)
-                 (esrap:esrap-parse-error ()
-                   (format t "~&Parse error")))))))))
+    (loop
+      (let ((input (prompt-for-input)))
+        (cond ((null input) (return))
+              ((zerop (length input)))
+              (t (handler-case (drive input)
+                   (esrap:esrap-parse-error ()
+                     (format t "~&Parse error")))))))))

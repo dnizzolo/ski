@@ -129,7 +129,7 @@ terms. Return the new term and the new stack as multiple values."))
                    (esrap:esrap-parse-error ()
                      (format t "~&Parse error")))))))))
 
-(defparameter *combinators* (make-hash-table)
+(defvar *combinators* (make-hash-table)
   "The table of interned combinators.")
 
 (defun get-combinator (name)

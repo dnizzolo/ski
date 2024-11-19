@@ -1,19 +1,18 @@
 # SKI
 
 A simple system to explore combinatory logic and lambda calculus
-inspired by the book [To Mock a
-Mockingbird](https://en.wikipedia.org/wiki/To_Mock_a_Mockingbird) by
-Raymond Smullyan.
+inspired by the book [To Mock a Mockingbird][] by Raymond Smullyan.
 
 ## Description
 
 This system is only meant to be used to play with combinatory logic
 and lambda calculus. You can parse terms from strings with the usual
-grammars and perform operations on them such as reduction or
-translations from a system to another. Additionally you may write
-simple programs for lambda calculus or combinatory logic.
+grammars into objects of the calculi and perform operations on them
+such as reductions or translations from a system to another.
+Additionally you may write simple programs for lambda calculus or
+combinatory logic.
 
-### General use
+### Basic use
 
 Load the system with ASDF and enter the `SKI` package:
 
@@ -25,8 +24,8 @@ CL-USER> (in-package :ski)
 SKI>
 ```
 
-Parse a combinatory logic term KIxy, which is shorthand for ((KI)x)y.
-Here is its representation in the system:
+Parse the combinatory logic term **KI**xy, which is shorthand for
+((**K I**) x) y. Here is its representation in the system:
 
 ```
 SKI> (parse-combinator-term "KIxy")
@@ -44,11 +43,12 @@ NIL
 T
 ```
 
-Now we reduce the term and sure enough the result is the variable y. I
-should add that combinatory logic itself doesn't have variables, I
-just added them so one can see more clearly the application of a
-combinator. The variables are basically just placeholders and don't
-have reduction rules associated with them.
+Now we reduce the term and sure enough the result is the variable y.
+You probably know that combinatory logic doesn't have variables, I
+just added them to have a clear feedback on the behavior of a
+combinator. The variables are placeholders and don't have reduction
+rules associated with them and just get shuffled around by the
+combinators.
 
 ```
 SKI> (reduce-term (parse-combinator-term "KIxy"))
@@ -58,7 +58,7 @@ y
 #<COMBINATOR-VARIABLE (y) {100237FC43}>
 ```
 
-Some more examples with combinatory logic and lambda calculus:
+Some more examples:
 
 ```
 SKI> (print-term (reduce-term (parse-combinator-term "STTx")))
@@ -66,6 +66,9 @@ xx
 #<COMBINATOR-APPLICATION ...>
 SKI> (print-term (reduce-term (parse-combinator-term "B(B(B(TT)B)B)Txyz")))
 zyx
+#<COMBINATOR-APPLICATION ...>
+SKI> (print-term (make-combinator-application (get-combinator 'B) (make-combinator-variable 'x)))
+Bx
 #<COMBINATOR-APPLICATION ...>
 SKI> (print-term (lambda->ski (parse-lambda-term "λxy.yx")))
 S(K(SI))K
@@ -82,6 +85,9 @@ S(K(S(S(KS)(S(K(SI))K))))(S(KK)K)
 SKI> (print-term (combinator->ski (get-combinator 'U)))
 S(K(SI))(SII)
 #<COMBINATOR-APPLICATION ...>
+SKI> (print-term (combinator->lambda (get-combinator 'Ꙇ)))
+λa.a(λa.λb.λc.ac(bc))(λa.λb.a)
+#<LAMBDA-ABSTRACTION ...>
 ```
 
 ### REPL for combinators
@@ -117,8 +123,8 @@ zyx
 
 ### REPL for lambda calculus
 
-Similarly there is a REPL for lambda calculus which is invoked with
-the `lambda-driver-loop` function.
+Similarly there is a REPL for lambda calculus which is invoked by the
+[LAMBDA-DRIVER-LOOP][] function.
 
 ### Combinator programs
 
@@ -126,7 +132,7 @@ You can write combinator programs that define new combinators in term
 of other combinators. Definitions of new combinators can take
 parameters and can be recursive: this allows you to sidestep the need
 for the fixed point principle which is used in the formal discussion
-in the book. Defined combinators names must be made up of uppercase
+in the book. Defined combinators' names must be made up of uppercase
 letters and start with a `@`. After the definitions (if any, they're
 optional) you must provide some combinatory logic term to reduce. Here
 is an example of arithmetic combinators:
@@ -212,95 +218,22 @@ SKI> (church->natural *)
 120 (7 bits, #x78, #o170, #b1111000)
 ```
 
-### CLI
+### Command line interface
 
 Run the `make` command to compile the system into an executable which
 can run REPLs and evaluate programs.
 
-## Exports
+## Installation
 
-* `term` - base class for terms.
-* `term-p` - check if an object is a term.
-* `variable` - base class for variables and generic function that
-  returns the variable of a lambda abstraction.
-* `variable-p` - check if an object is a variable.
-* `name` - get the name of an object that has a name slot.
-* `same-variable-p` - check if two variable have the same name.
-* `make-variable-name-generator` - make an object that generates
-  variable names.
-* `generate-name` - generate the next variable name from a generator
-  object.
-* `application` - base class for applications.
-* `application-p` - check if an object is an application.
-* `left` - get the left object of an application, i.e. the function.
-* `right` - get the right object of an application, i.e. the argument.
-* `occurs-free-p` - check if a variable occurs free in a term.
-* `print-term` - print a parsable representation of a term.
-* `term-equal` - check if two terms are equal.
-* `reduce-term` - reduce a term to its normal form.
-* `combinator-driver-loop` - a REPL for combinatory logic.
-* `combinator-term` - base class for combinatory logic terms.
-* `combinator-term-p` - check if an object is a combinatory logic
-  term.
-* `combinator` - class for a combinator in combinatory logic.
-* `combinator-p` - check if an object is a combinator.
-* `arity` - return the number of "arguments" a term takes.
-* `make-combinator-variable` - make a variable for combinatory logic.
-* `combinator-variable-p` - check if an object is a combinatory logic
-  variable.
-* `make-combinator-application` - make a combinatory logic
-  application.
-* `combinator-application-p` - check if an object is an application in
-  combinatory logic.
-* `define-combinator` - define a combinator.
-* `get-combinator` - get the combinator object associated with a
-  symbol.
-* `lambda-term` - base class for lambda calculus terms.
-* `lambda-term-p` - check if an object is a lambda calculus term.
-* `make-lambda-variable` - make a variable for lambda calculus.
-* `lambda-variable-p` - check if an object is a lambda calculus
-  variable.
-* `make-lambda-application` - make a lambda-calculus application.
-* `lambda-application-p` - check if an object is a lambda calculus
-  application.
-* `make-lambda-abstraction` - make a lambda calculus abstraction.
-* `lambda-abstraction-p` - check if an object is a lambda calculus
-  abstraction.
-* `body` - get the body of a lambda calculus abstraction.
-* `free-variables` - return the free variables in a lambda calculus
-  term.
-* `bound-variables` - return the bound variables in a lambda calculus
-  term.
-* `substitute-avoiding-capture` - substitute without changing the
-  term's meaning.
-* `lambda-combinator-p` - check if a lambda term is a combinator.
-* `lambda-driver-loop` - a REPL for lambda calculus.
-* `sk->goedel` - return the Gödel number of a SK calculus term.
-* `goedel->sk` - return the SK calculus term of a Gödel number.
-* `natural->church` - return the Church numeral of a natural number.
-* `church->natural` - return the natural number represented by a
-  Church numeral.
-* `natural->barendregt` - return the numeral of a natural number
-  according to the encoding used in the book.
-* `barendregt->natural` - return the natural number represented by a
-  numeral according to the encoding used in the book.
-* `combinator->lambda` - convert a combinator to its equivalent lambda
-  abstraction.
-* `combinator->ski` - express a combinator using only the S, K, and I
-  combinators.
-* `lambda->ski` - traduce a term from lambda calculus to SKI calculus.
-* `lambda->sk` - traduce a term from lambda calculus to SK calculus.
-* `parse-combinator-term` - parse a combinatory logic term from a
-  string.
-* `parse-lambda-term` - parse a lambda calculus term from a string.
-* `build-lambda-program` - given a lambda program, return the list of
-  pure lambda calculus terms defined by the program, ready to be
-  evaluated.
-* `run-lambda-program` - run a lambda program.
-* `run-combinator-program` - run a combinator program.
+Clone this repository into a directory that ASDF and Quicklisp see
+(most likely `~/quicklisp/local-projects/`) and then run
+`(asdf:load-system :ski)` or `(ql:quickload :ski)` from your Lisp
+REPL.
 
-All symbols associated with combinators (`S`, `K`, `I`, `B`, `C`, `W`,
-`M`, etc.) are exported.
+## Tests
+
+Run `(asdf:test-system :ski)` from your Lisp REPL or `make test` from
+the command line.
 
 ## Exercises
 
@@ -311,13 +244,184 @@ exercise requirement. However, this approach is fundamentally flawed
 because it often gets stuck in an infinite loop trying to reduce a
 term that doesn't have a normal form.
 
-## Tests
+## Interface
 
-Run `(asdf:test-system :ski)` from your Lisp REPL or `make test` from
-the command line.
+All symbols associated with combinators (`S`, `K`, `I`, `B`, `C`, `W`,
+`M`, etc.) are exported.
 
-## Installation
+### TERM
+*Class*
 
-Clone this repository into a directory that ASDF and Quicklisp see
-(most likely `~/quicklisp/local-projects/`) and then run
-`(asdf:load-system :ski)` from your Lisp REPL.
+### TERM-P
+*Function*
+
+### APPLICATION
+*Class*
+
+### APPLICATION-P
+*Function*
+
+### LEFT
+*Generic Function*
+
+### RIGHT
+*Generic Function*
+
+### MAKE-VARIABLE-NAME-GENERATOR
+*Function*
+
+### GENERATE-NAME
+*Function*
+
+### NAME
+*Generic Function*
+
+### VARIABLE
+*Class*, *Generic Function*
+
+### VARIABLE-P
+*Function*
+
+### SAME-VARIABLE-P
+*Generic Function*
+
+### OCCURS-FREE-P
+*Generic Function*
+
+### PRINT-TERM
+*Generic Function*
+
+### REDUCE-TERM
+*Generic Function*
+
+### TERM-EQUAL
+*Generic Function*
+
+### COMBINATOR-TERM
+*Class*
+
+### COMBINATOR-TERM-P
+*Function*
+
+### COMBINATOR
+*Class*
+
+### COMBINATOR-P
+*Function*
+
+### DEFINE-COMBINATOR
+*Macro*
+
+### GET-COMBINATOR
+*Function*
+
+### ARITY
+*Generic Function*
+
+### MAKE-COMBINATOR-APPLICATION
+*Function*
+
+### COMBINATOR-APPLICATION-P
+*Function*
+
+### MAKE-COMBINATOR-VARIABLE
+*Function*
+
+### COMBINATOR-VARIABLE-P
+*Function*
+
+### COMBINATOR-DRIVER-LOOP
+*Function*
+
+### LAMBDA-TERM
+*Class*
+
+### LAMBDA-TERM-P
+*Function*
+
+### MAKE-LAMBDA-ABSTRACTION
+*Function*
+
+### LAMBDA-ABSTRACTION-P
+*Function*
+
+### BODY
+*Generic Function*
+
+### MAKE-LAMBDA-APPLICATION
+*Function*
+
+### LAMBDA-APPLICATION-P
+*Function*
+
+### MAKE-LAMBDA-VARIABLE
+*Function*
+
+### LAMBDA-VARIABLE-P
+*Function*
+
+### FREE-VARIABLES
+*Generic Function*
+
+### BOUND-VARIABLES
+*Generic Function*
+
+### LAMBDA-COMBINATOR-P
+*Generic Function*
+
+### \*LAMBDA-REDUCTION-STRATEGY\*
+*Dynamic Variable*
+
+### SUBSTITUTE-AVOIDING-CAPTURE
+*Generic Function*
+
+### LAMBDA-DRIVER-LOOP
+*Function*
+
+### SK->GOEDEL
+*Generic Function*
+
+### GOEDEL->SK
+*Function*
+
+### NATURAL->CHURCH
+*Function*
+
+### CHURCH->NATURAL
+*Function*
+
+### NATURAL->BARENDREGT
+*Function*
+
+### BARENDREGT->NATURAL
+*Function*
+
+### COMBINATOR->LAMBDA
+*Function*
+
+### COMBINATOR->SKI
+*Function*
+
+### LAMBDA->SKI
+*Generic Function*
+
+### LAMBDA->SK
+*Generic Function*
+
+### PARSE-COMBINATOR-TERM
+*Function*
+
+### PARSE-LAMBDA-TERM
+*Function*
+
+### BUILD-LAMBDA-PROGRAM
+*Function*
+
+### RUN-LAMBDA-PROGRAM
+*Function*
+
+### RUN-COMBINATOR-PROGRAM
+*Function*
+
+[To Mock a Mockingbird]: https://en.wikipedia.org/wiki/To_Mock_a_Mockingbird
+[LAMBDA-DRIVER-LOOP]: #LAMBDA-DRIVER-LOOP
