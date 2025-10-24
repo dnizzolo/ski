@@ -5,7 +5,7 @@
 (in-package #:ex-12-16)
 
 (defun solve ()
-  (do ((mockingbird-p (extensionally-equal (get-combinator 'M)))
+  (do ((mockingbird-p (make-extensional-equality-predicate (get-combinator 'M)))
        (allowed (list (get-combinator 'S) (get-combinator 'T)))
        (n 1 (1+ n)))
       (())

@@ -5,7 +5,7 @@
 (in-package #:ex-12-12)
 
 (defun solve ()
-  (do ((starling-p (extensionally-equal (get-combinator 'S)))
+  (do ((starling-p (make-extensional-equality-predicate (get-combinator 'S)))
        (allowed (list (get-combinator 'B) (get-combinator 'W**) (get-combinator 'G)))
        (n 1 (1+ n)))
       (())

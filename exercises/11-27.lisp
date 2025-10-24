@@ -5,7 +5,7 @@
 (in-package #:ex-11-27)
 
 (defun solve ()
-  (do ((vireo-p (extensionally-equal (get-combinator 'V)))
+  (do ((vireo-p (make-extensional-equality-predicate (get-combinator 'V)))
        (allowed (list (get-combinator 'C) (get-combinator 'F)))
        (n 1 (1+ n)))
       (())

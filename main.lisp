@@ -33,4 +33,4 @@ Available subcommands:
                     ((string= subcommand "combinator-program")
                      #'run-combinator-program)
                     (t (print-help-and-exit))))))
-        (otherwise (print-help-and-exit))))))
+        (t (print-help-and-exit))))))

@@ -5,7 +5,7 @@
 (in-package #:ex-11-11)
 
 (defun solve ()
-  (do ((dovekie-p (extensionally-equal (get-combinator 'D2)))
+  (do ((dovekie-p (make-extensional-equality-predicate (get-combinator 'D2)))
        (bluebird (get-combinator 'B))
        (n 1 (1+ n)))
       (())

@@ -173,9 +173,9 @@ variables while doing so."))
            (let ((forbidden (union (free-variables t1)
                                    (free-variables t2)
                                    :test #'same-variable-p))
-                 (generator (make-variable-name-generator)))
+                 (g (make-variable-name-generator)))
              (loop
-               (let ((var (make-lambda-variable (generate-name generator))))
+               (let ((var (make-lambda-variable (generate-name g))))
                  (unless (member var forbidden :test #'same-variable-p)
                    (return var)))))))
     (with-accessors ((variable variable) (body body)) term

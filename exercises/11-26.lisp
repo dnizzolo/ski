@@ -5,7 +5,7 @@
 (in-package #:ex-11-26)
 
 (defun solve ()
-  (do ((finch-p (extensionally-equal (get-combinator 'F)))
+  (do ((finch-p (make-extensional-equality-predicate (get-combinator 'F)))
        (allowed (list (get-combinator 'B) (get-combinator 'T)))
        (n 1 (1+ n)))
       (())

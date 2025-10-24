@@ -5,7 +5,7 @@
 (in-package #:ex-11-06)
 
 (defun solve ()
-  (do ((blackbird-p (extensionally-equal (get-combinator 'B1)))
+  (do ((blackbird-p (make-extensional-equality-predicate (get-combinator 'B1)))
        (bluebird (get-combinator 'B))
        (n 1 (1+ n)))
       (())

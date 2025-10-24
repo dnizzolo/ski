@@ -14,6 +14,6 @@
 (defun solve ()
   (report-terms
    (remove-if-not
-    (extensionally-equal (get-combinator 'S))
+    (make-extensional-equality-predicate (get-combinator 'S))
     (full-binary-trees 6 :leaf (get-combinator 'Q))
     :key #'wrap)))

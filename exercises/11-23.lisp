@@ -5,7 +5,7 @@
 (in-package #:ex-11-23)
 
 (defun solve ()
-  (do ((robin-p (extensionally-equal (get-combinator 'R)))
+  (do ((robin-p (make-extensional-equality-predicate (get-combinator 'R)))
        (cardinal (get-combinator 'C))
        (n 1 (1+ n)))
       (())

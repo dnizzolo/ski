@@ -7,7 +7,7 @@
    #:candidates
    #:substitute-nils
    #:search-n-terms
-   #:extensionally-equal))
+   #:make-extensional-equality-predicate))
 
 (in-package #:ex-utils)
 
@@ -71,15 +71,20 @@ satisfy CRITERION."
                     when (funcall criterion candidate-term)
                       collect candidate-term)))
 
-(defun extensionally-equal (reference)
+(defun make-extensional-equality-predicate (reference)
   "Return a function that takes a TERM and returns non-NIL if TERM is
 functionally equivalent to REFERENCE. REFERENCE must be a combinatory
 logic object with an ARITY."
-  (let ((vars (loop with g = (make-variable-name-generator)
-                    with arity = (arity reference)
-                    repeat arity
-                    collect (make-combinator-variable (generate-name g)))))
+  (let* ((vars (loop with g = (make-variable-name-generator)
+                     with arity = (arity reference)
+                     repeat arity
+                     collect (make-combinator-variable (generate-name g))))
+         (reference (reduce-term (reduce #'make-combinator-application
+                                         vars
+                                         :initial-value reference))))
     (lambda (term)
       (term-equal
-       (reduce-term (reduce #'make-combinator-application vars :initial-value reference))
-       (reduce-term (reduce #'make-combinator-application vars :initial-value term))))))
+       reference
+       (reduce-term (reduce #'make-combinator-application
+                            vars
+                            :initial-value term))))))

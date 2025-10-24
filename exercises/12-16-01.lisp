@@ -5,7 +5,7 @@
 (in-package #:ex-12-16-01)
 
 (defun solve ()
-  (do ((good-p (extensionally-equal (get-combinator 'G1)))
+  (do ((good-p (make-extensional-equality-predicate (get-combinator 'G1)))
        (allowed (list (get-combinator 'B) (get-combinator 'G)))
        (n 1 (1+ n)))
       (())
