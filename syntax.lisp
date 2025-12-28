@@ -158,8 +158,8 @@ with the # character and they extend to the end of the line."))
 ;;;; Lambda calculus programs.
 
 (defvar *lambda-program-definitions* nil
-  "The definitions in a lambda program to keep track of as we parse
- it in order to resolve references to definitions in terms.")
+  "The definitions in a lambda program to keep track of as we parse it in
+order to resolve references to definitions in terms.")
 
 (esrap:defrule lambda-program
     (and (* lambda-program-definition)
