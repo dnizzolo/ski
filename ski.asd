@@ -15,6 +15,7 @@
                (:file "transformations")
                (:file "syntax")
                (:file "main")
+               (:file "parser")
                (:module "exercises"
                 :components ((:file "utils")
                              (:file "11-06")
