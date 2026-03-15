@@ -20,7 +20,8 @@
                                       variables
                                       :initial-value combinator))))
       (reduce #'make-lambda-abstraction
-              (mapcar (lambda (v) (make-lambda-variable (name v))) variables)
+              variables
+              :key (lambda (v) (make-lambda-variable (name v)))
               :from-end t
               :initial-value (term->lambda term)))))
 
