@@ -45,7 +45,7 @@
 
 (defclass scanner ()
   ((source :initarg :source :reader source)
-   (tokens :initform (make-array 32 :adjustable t :fill-pointer 0) :accessor tokens)
+   (tokens :initform (make-array 0 :adjustable t :fill-pointer t) :reader tokens)
    (start :initform 0 :accessor start)
    (current :initform 0 :accessor current)
    (line :initform 1 :accessor line)
@@ -98,7 +98,7 @@
               do (scan-token scanner)
                  (setf start current)
               finally (add-token scanner :eof)
-                      (return (adjust-array tokens (length tokens))))
+                      (return tokens))
         tokens)))
 
 (defun skip-comment (scanner)
@@ -106,7 +106,7 @@
                   (char= (peek scanner) #\Newline))
         do (advance scanner)))
 
-;;;; Grammar for lambda stuff.
+;;;; Lambda calculus grammar.
 ;;;;
 ;;;; digit = "0" ... "9" ;
 ;;;; lower-alpha = "a" ... "z" ;
@@ -116,7 +116,7 @@
 ;;;; lam = atom ( " "+ lam )* ;
 ;;;; binding = ident "=" lam ;
 ;;;; toplevel = binding | lam ;
-;;;; file = ( toplevel ';' )* ;
+;;;; file = ( toplevel ";" )* ;
 
 (defclass lambda-scanner (scanner) ())
 
@@ -225,7 +225,7 @@
                       (parser-consume
                        parser :identifier "Expect identifier after lambda.")))
             until (parser-match parser :dot)))
-        (body (parse-lambda-term parser)))
+        (body (parse-lambda-tree parser)))
     (reduce #'make-lambda-abstraction
             variables
             :initial-value body
@@ -236,14 +236,14 @@
     ((parser-match parser :lambda)
      (parse-lambda-abstraction parser))
     ((parser-match parser :left-paren)
-     (prog1 (parse-lambda-term parser)
+     (prog1 (parse-lambda-tree parser)
        (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
     ((parser-check parser :identifier)
      (make-lambda-variable (literal (advance parser))))
     (t
      (parser-error parser "Expect either an abstraction, an application or a variable."))))
 
-(defun parse-lambda-term (parser)
+(defun parse-lambda-tree (parser)
   (loop with term = (parse-lambda-atom parser)
         until (or (parser-check parser :eof)
                   (parser-check parser :right-paren)
@@ -254,15 +254,15 @@
 
 (defun parse-lambda-binding (parser)
   (let ((name (prog1 (advance parser) (advance parser))))
-    (make-lambda-binding (literal name) (parse-lambda-term parser))))
+    (make-lambda-binding (literal name) (parse-lambda-tree parser))))
 
 (defun parse-lambda-toplevel (parser)
   (if (parser-check parser :identifier :equal)
       (parse-lambda-binding parser)
-      (parse-lambda-term parser)))
+      (parse-lambda-tree parser)))
 
 (defun parse-lambda-file (parser)
-  (loop with toplevels = (make-array 10 :adjustable t :fill-pointer 0)
+  (loop with toplevels = (make-array 0 :adjustable t :fill-pointer t)
         until (parser-check parser :eof)
         do (vector-push-extend
             (prog1 (parse-lambda-toplevel parser)
@@ -270,13 +270,16 @@
             toplevels)
         finally (return toplevels)))
 
-(defun parse-lambda-repl (parser)
-  (prog1 (parse-lambda-toplevel parser)
-    (parser-consume parser :eof "Leftover input at the end.")))
+(defun parse-lambda-term (source)
+  (let* ((scanner (make-lambda-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-lambda-parser tokens source)))
+    (prog1 (parse-lambda-toplevel parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
 
 (defclass lambda-binding ()
   ((name :initarg :name :reader name)
-   (term :initarg :term :accessor term))
+   (term :initarg :term :reader term))
   (:default-initargs
    :name (error "Name required.")
    :term (error "Term required.")))
@@ -290,20 +293,29 @@
 (defmethod print-object ((object lambda-binding) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (with-slots (name term) object
-      (format stream "~a " name)
-      (print-term term stream))))
+      (format stream "~a ~a" name term))))
 
-(defun run-lambda-file (file)
+(defun run-lambda-program (file &optional (stream *standard-output*))
   (let* ((source (uiop:read-file-string file))
          (scanner (make-lambda-scanner source))
          (tokens (scan-tokens scanner))
          (parser (make-lambda-parser tokens source))
-         (items (parse-lambda-file parser))
-         (terms (remove-if #'lambda-binding-p items))
-         (bindings (remove-if-not #'lambda-binding-p items)))
-    items))
+         (toplevels (parse-lambda-file parser))
+         (terms (remove-if #'lambda-binding-p toplevels))
+         (bindings (remove-if-not #'lambda-binding-p toplevels)))
+    (loop for i from (1- (length bindings)) downto 0
+          for binding = (aref bindings i)
+          for var = (make-lambda-variable (name binding))
+          for sub = (term binding)
+          do (map-into terms (lambda (term) (substitute-avoiding-capture term var sub)) terms))
+    (loop with last
+          for term across terms
+          do (setf last (reduce-term term))
+             (fresh-line stream)
+             (print-term last stream)
+          finally (return last))))
 
-;;;; Grammar for combinator stuff.
+;;;; Combinatory logic grammar.
 ;;;;
 ;;;; digit = "0" ... "9" ;
 ;;;; lower-alpha = "a" ... "z" ;
@@ -313,7 +325,7 @@
 ;;;; comb = atom ( " "+ comb )* ;
 ;;;; binding = ident+ "=" comb ;
 ;;;; toplevel = binding | comb ;
-;;;; file = ( toplevel ';' )* ;
+;;;; file = ( toplevel ";" )* ;
 
 (defclass combinator-scanner (scanner) ())
 
@@ -371,14 +383,14 @@
     ((parser-check parser :combinator)
      (literal (advance parser)))
     ((parser-match parser :left-paren)
-     (prog1 (parse-combinator-term parser)
+     (prog1 (parse-combinator-tree parser)
        (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
     ((parser-check parser :identifier)
      (make-combinator-variable (literal (advance parser))))
     (t
      (parser-error parser "Expect either a combinator, an application or a variable."))))
 
-(defun parse-combinator-term (parser)
+(defun parse-combinator-tree (parser)
   (loop with term = (parse-combinator-atom parser)
         until (or (parser-check parser :eof)
                   (parser-check parser :right-paren)
@@ -392,7 +404,7 @@
         (vars (loop until (parser-match parser :equal)
                     for name = (parser-consume parser :identifier "Expect variable name.")
                     collect (intern (string-upcase (literal name)))))
-        (body (parse-combinator-term parser)))
+        (body (parse-combinator-tree parser)))
     (make-combinator-binding
      (literal name)
      (length vars)
@@ -403,10 +415,10 @@
     (let ((end (position :semicolon tokens :start current :key #'token-type)))
       (if (find :equal tokens :start current :end end :key #'token-type)
           (parse-combinator-binding parser)
-          (parse-combinator-term parser)))))
+          (parse-combinator-tree parser)))))
 
 (defun parse-combinator-file (parser)
-  (loop with toplevels = (make-array 10 :adjustable t :fill-pointer 0)
+  (loop with toplevels = (make-array 0 :adjustable t :fill-pointer t)
         until (parser-check parser :eof)
         do (vector-push-extend
             (prog1 (parse-combinator-toplevel parser)
@@ -414,9 +426,12 @@
             toplevels)
         finally (return toplevels)))
 
-(defun parse-combinator-repl (parser)
-  (prog1 (parse-combinator-toplevel parser)
-    (parser-consume parser :eof "Leftover input at the end.")))
+(defun parse-combinator-term (source)
+  (let* ((scanner (make-combinator-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-combinator-parser tokens source)))
+    (prog1 (parse-combinator-toplevel parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
 
 (defclass combinator-binding ()
   ((name :initarg :name :reader name)
@@ -438,8 +453,8 @@
 
 (defmethod print-object ((object combinator-binding) stream)
   (print-unreadable-object (object stream :type t :identity t)
-    (with-slots (name term) object
-      (format stream "~a" name))))
+    (with-slots (name arity) object
+      (format stream "~a/~d" name arity))))
 
 (defun expand-operation (variables expr)
   "Compute the lambda form that implements the operation of a combinator
@@ -454,22 +469,21 @@ binding."
                   ,(operation-form (right term))))
                (combinator-term
                 term))))
-    (let ((stack-variable (gensym)))
+    (let ((arity (length variables))
+          (stack-variable (gensym)))
       `(lambda (,stack-variable)
-         (let ,(expand-bindings-for-stack-access variables stack-variable)
-           (declare (ignorable ,@variables))
-           (values ,(operation-form expr)
-                   (nthcdr ,(length variables) ,stack-variable)))))))
+         (when (>= (length ,stack-variable) ,arity)
+           (let ,(expand-bindings-for-stack-access variables stack-variable)
+             (declare (ignorable ,@variables))
+             (values ,(operation-form expr)
+                     (nthcdr ,arity ,stack-variable))))))))
 
 (defvar *combinator-bindings*)
 
 (defmethod step-combinator-term :around ((term combinator-variable) (stack list))
   (if (boundp '*combinator-bindings*)
       (multiple-value-bind (binding found-p) (gethash (name term) *combinator-bindings*)
-        (if found-p
-            (when (<= (arity binding) (length stack))
-              (funcall (operation binding) stack))
-            (call-next-method)))
+        (if found-p (funcall (operation binding) stack) (call-next-method)))
       (call-next-method)))
 
 (defun run-combinator-program (file &optional (stream *standard-output*))
@@ -477,11 +491,11 @@ binding."
          (scanner (make-combinator-scanner source))
          (tokens (scan-tokens scanner))
          (parser (make-combinator-parser tokens source))
-         (items (parse-combinator-file parser))
-         (terms (remove-if #'combinator-binding-p items))
+         (toplevels (parse-combinator-file parser))
+         (terms (remove-if #'combinator-binding-p toplevels))
          (*combinator-bindings*
            (loop with table = (make-hash-table :test #'equal)
-                 for binding across (remove-if-not #'combinator-binding-p items)
+                 for binding across (remove-if-not #'combinator-binding-p toplevels)
                  do (setf (gethash (name binding) table) binding)
                  finally (return table))))
     (loop with last

@@ -38,7 +38,7 @@
        (make-combinator-application
         (make-combinator-variable #\x)
         (make-combinator-variable #\z)))
-      (parse-combinator-term "xy(zwy)(xz)"))
+      (parse-combinator-term "x y(z w y)(x z)"))
   (is term-equal
       (make-combinator-application
        (make-combinator-application
@@ -60,7 +60,7 @@
       (make-lambda-application
        (make-lambda-variable #\x)
        (make-lambda-variable #\y))
-      (parse-lambda-term "xy"))
+      (parse-lambda-term "x y"))
   (is term-equal
       (make-lambda-application
        (make-lambda-application
@@ -69,7 +69,7 @@
          (make-lambda-variable #\w)
          (make-lambda-variable #\w)))
        (make-lambda-variable #\u))
-      (parse-lambda-term "v(ww)u"))
+      (parse-lambda-term "v(w w)u"))
   (is term-equal
       (make-lambda-abstraction
        (make-lambda-variable #\x)
@@ -98,7 +98,7 @@
             (make-lambda-variable #\y))
            (make-lambda-variable #\y)))))
        (make-lambda-variable #\m))
-      (parse-lambda-term "(λx.x)(λfy.fyy)m")))
+      (parse-lambda-term "(λx.x)(λf y.f y y)m")))
 
 (define-test combinator-reduction-test
   :depends-on (parse-combinator-term-test)
@@ -113,76 +113,76 @@
     (is-reduced "SSI" "SKISKISKSKKIISSISKKSISISISIKSSKISSI")
     (is-reduced "S" "SSKSKSKSIISKSI(SSIKS)")
     (is-reduced "SKS" "KSKSISSKISKISKSISKISKISKISKISKISKISKISKISKI(KISSISKSISKI(ISKISK)SKISK)SIKS")
-    (is-reduced "a(bc)" "Babc")
-    (is-reduced "a(bc)" "S(KS)Kabc")
-    (is-reduced "a(bb)" "S(Ka)(SII)b")
-    (is-reduced "a" "VabK")
-    (is-reduced "b" "Vab(KI)")
-    (is-reduced "xx" "Mx")
-    (is-reduced "xx" "STTx")
+    (is-reduced "a(b c)" "B a b c")
+    (is-reduced "a(b c)" "S(KS)K a b c")
+    (is-reduced "a(b b)" "S(K a)(SII)b")
+    (is-reduced "a" "V a b K")
+    (is-reduced "b" "V a b (KI)")
+    (is-reduced "x x" "Mx")
+    (is-reduced "x x" "STTx")
     (is-reduced "xII" "I2x")
-    (is-reduced "xz(yz)" "C(Q(QQ(QQ))Q)Wxyz")
-    (is-reduced "xz(yz)" "C(QQ(Q(QQ)Q))Wxyz")))
+    (is-reduced "x z(y z)" "C(Q(QQ(QQ))Q)W x y z")
+    (is-reduced "x z(y z)" "C(QQ(Q(QQ)Q))W x y z")))
 
 (define-test lambda->ski-test
   :depends-on (parse-combinator-term-test parse-lambda-term-test)
   (is term-equal
       (parse-combinator-term "S(K(SI))K")
-      (lambda->ski (parse-lambda-term "λxy.yx")))
+      (lambda->ski (parse-lambda-term "λx y.y x")))
   (is term-equal
       (make-combinator-application
        (make-combinator-variable #\b)
        (make-combinator-variable #\a))
-      (reduce-term (lambda->ski (parse-lambda-term "(λxy.yx)ab"))))
+      (reduce-term (lambda->ski (parse-lambda-term "(λx y.y x)a b"))))
   (is term-equal
       (get-combinator 'K)
-      (reduce-term (lambda->ski (parse-lambda-term "(λn.n(λx.λxy.y)(λxy.x))λfx.x"))))
+      (reduce-term (lambda->ski (parse-lambda-term "(λn.n(λx.λx y.y)(λx y.x))λf x.x"))))
   (is term-equal
       (make-combinator-application
        (get-combinator 'K)
        (get-combinator 'I))
-      (reduce-term (lambda->ski (parse-lambda-term "(λn.n(λx.λxy.y)(λxy.x))λfx.fx")))))
+      (reduce-term (lambda->ski (parse-lambda-term "(λn.n(λx.λx y.y)(λx y.x))λf x.f x")))))
 
 (define-test lambda->sk-test
   :depends-on (parse-combinator-term-test parse-lambda-term-test)
   (is term-equal
       (parse-combinator-term "S(K(S(SKK)))K")
-      (lambda->sk (parse-lambda-term "λxy.yx")))
+      (lambda->sk (parse-lambda-term "λx y.y x")))
   (is term-equal
       (make-combinator-application
        (make-combinator-variable #\b)
        (make-combinator-variable #\a))
-      (reduce-term (lambda->sk (parse-lambda-term "(λxy.yx)ab"))))
+      (reduce-term (lambda->sk (parse-lambda-term "(λx y.y x)a b"))))
   (is term-equal
       (get-combinator 'K)
-      (reduce-term (lambda->sk (parse-lambda-term "(λn.n(λx.λxy.y)(λxy.x))λfx.x"))))
+      (reduce-term (lambda->sk (parse-lambda-term "(λn.n(λx.λx y.y)(λx y.x))λf x.x"))))
   (is term-equal
       (parse-combinator-term "K(SKK)")
-      (reduce-term (lambda->sk (parse-lambda-term "(λn.n(λx.λxy.y)(λxy.x))λfx.fx")))))
+      (reduce-term (lambda->sk (parse-lambda-term "(λn.n(λx.λx y.y)(λx y.x))λf x.f x")))))
 
 (define-test combinator->lambda-test
   :depends-on (combinator-reduction-test parse-lambda-term-test lambda-equality-test)
   (is term-equal
       (combinator->lambda (get-combinator 'M))
-      (parse-lambda-term "λx.xx"))
+      (parse-lambda-term "λx.x x"))
   (is term-equal
       (combinator->lambda (get-combinator 'B))
-      (parse-lambda-term "λxyz.x(yz)"))
+      (parse-lambda-term "λx y z.x(y z)"))
   (is term-equal
       (combinator->lambda (get-combinator 'L))
-      (parse-lambda-term "λxy.x(yy)"))
+      (parse-lambda-term "λx y.x(y y)"))
   (is term-equal
       (combinator->lambda (get-combinator 'W))
-      (parse-lambda-term "λxy.xyy"))
+      (parse-lambda-term "λx y.x y y"))
   (is term-equal
       (combinator->lambda (get-combinator 'K))
-      (parse-lambda-term "λxy.x"))
+      (parse-lambda-term "λx y.x"))
   (is term-equal
       (combinator->lambda (get-combinator 'I))
       (parse-lambda-term "λx.x"))
   (is term-equal
       (combinator->lambda (get-combinator 'S))
-      (parse-lambda-term "λxyz.xz(yz)")))
+      (parse-lambda-term "λx y z.x z(y z)")))
 
 (define-test combinator->ski-test
   :depends-on (combinator-reduction-test)
@@ -229,8 +229,8 @@
     (expect-lambda-equal false "a" "b")
     (expect-lambda-equal false "λx.x" "λy.x")
     (expect-lambda-equal true "(λx.x)a" "(λy.y)a")
-    (expect-lambda-equal true "λfx.f(f(fx))" "λgy.g(g(gy))")
-    (expect-lambda-equal false "λfx.f(f(fx))" "λgy.g(g(gx))")))
+    (expect-lambda-equal true "λf x.f(f(f x))" "λg y.g(g(g y))")
+    (expect-lambda-equal false "λf x.f(f(f x))" "λgy.g(g(g x))")))
 
 (define-test lambda-reduction-test
   :depends-on (parse-lambda-term-test
@@ -241,38 +241,38 @@
                     (reduce-term (parse-lambda-term ,term)))))
     (is-reduced "x" "x")
     (is-reduced "y" "(λx.x)y")
-    (is-reduced "ab" "(λx.λy.xy)ab")
-    (is-reduced "λy.λz.a(yz)" "(λx.λy.λz.x(yz))a")
-    (is-reduced "c(λa.da)" "(λa.ca)λa.da")
-    (is-reduced "λyz.z" "(λx.x)λyz.z")
-    (is-reduced "yz" "(λx.xy)(λy.yz)")
-    (is-reduced "λb.b" "(λa.λb.b)((λx.xx)(λx.xx))")
+    (is-reduced "a b" "(λx.λy.x y)a b")
+    (is-reduced "λy.λz.a(y z)" "(λx.λy.λz.x(y z))a")
+    (is-reduced "c(λa.d a)" "(λa.c a)λa.d a")
+    (is-reduced "λy z.z" "(λx.x)λy z.z")
+    (is-reduced "y z" "(λx.x y)(λy.y z)")
+    (is-reduced "λb.b" "(λa.λb.b)((λx.x x)(λx.x x))")
     (is-reduced "λx.x" "(λz.λy.z)(λx.x)(λa.λb.a)")
-    (is-reduced "x" "(λxyz.xyz)(λx.xx)(λx.x)x")
-    (is-reduced "λx.x" "(λx.λx.x)(mxx)")
-    (is-reduced "λxy.x" "(λn.n(λx.λxy.y)(λxy.x))λfx.x")
-    (is-reduced "λxy.y" "(λn.n(λx.λxy.y)(λxy.x))λfx.fx")
-    (is-reduced "λxy.y" "(λn.n(λx.λxy.y)(λxy.x))λfx.f(fx)")
-    (is-reduced "λxy.y" "(λn.n(λx.λxy.y)(λxy.x))λfx.f(f(fx))")
-    (is-reduced "λxy.y" "(λn.n(λx.λxy.y)(λxy.x))λfx.f(f(f(fx)))")
-    (is-reduced "λfx.f(f(fx))" "(λnfx.f(nfx))λfx.f(fx)")
-    (is-reduced "λfx.f(f(f(f(f(fx)))))" "(λmnf.m(nf))(λfx.f(f(fx)))(λfx.f(fx))")))
+    (is-reduced "x" "(λx y z.x y z)(λx.x x)(λx.x)x")
+    (is-reduced "λx.x" "(λx.λx.x)(m x x)")
+    (is-reduced "λx y.x" "(λn.n(λx.λx y.y)(λx y.x))λf x.x")
+    (is-reduced "λx y.y" "(λn.n(λx.λx y.y)(λx y.x))λf x.f x")
+    (is-reduced "λx y.y" "(λn.n(λx.λx y.y)(λx y.x))λf x.f(f x)")
+    (is-reduced "λx y.y" "(λn.n(λx.λx y.y)(λx y.x))λf x.f(f(f x))")
+    (is-reduced "λx y.y" "(λn.n(λx.λx y.y)(λx y.x))λf x.f(f(f(f x)))")
+    (is-reduced "λf x.f(f(f x))" "(λn f x.f(n f x))λf x.f(f x)")
+    (is-reduced "λf x.f(f(f(f(f(f x)))))" "(λm n f.m(n f))(λf x.f(f(f x)))(λf x.f(f x))")))
 
 (define-test church-numerals-test
   :depends-on (parse-lambda-term-test
                lambda-equality-test)
-  (is term-equal (parse-lambda-term "λfx.x") (natural->church 0))
-  (is term-equal (parse-lambda-term "λfx.fx") (natural->church 1))
-  (is term-equal (parse-lambda-term "λfx.f(fx)") (natural->church 2))
-  (is term-equal (parse-lambda-term "λfx.f(f(fx))") (natural->church 3))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(fx)))") (natural->church 4))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(fx))))))") (natural->church 7))
-  (is term-equal (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(f(fx)))))))))))") (natural->church 12))
-  (is = 0 (church->natural (parse-lambda-term "λfx.x")))
-  (is = 1 (church->natural (parse-lambda-term "λfx.fx")))
-  (is = 3 (church->natural (parse-lambda-term "λfx.f(f(fx))")))
-  (is = 8 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(fx)))))))")))
-  (is = 11 (church->natural (parse-lambda-term "λfx.f(f(f(f(f(f(f(f(f(f(fx))))))))))"))))
+  (is term-equal (parse-lambda-term "λf x.x") (natural->church 0))
+  (is term-equal (parse-lambda-term "λf x.f x") (natural->church 1))
+  (is term-equal (parse-lambda-term "λf x.f(f x)") (natural->church 2))
+  (is term-equal (parse-lambda-term "λf x.f(f(f x))") (natural->church 3))
+  (is term-equal (parse-lambda-term "λf x.f(f(f(f x)))") (natural->church 4))
+  (is term-equal (parse-lambda-term "λf x.f(f(f(f(f(f(f x))))))") (natural->church 7))
+  (is term-equal (parse-lambda-term "λf x.f(f(f(f(f(f(f(f(f(f(f(f x)))))))))))") (natural->church 12))
+  (is = 0 (church->natural (parse-lambda-term "λf x.x")))
+  (is = 1 (church->natural (parse-lambda-term "λf x.f x")))
+  (is = 3 (church->natural (parse-lambda-term "λf x.f(f(f x))")))
+  (is = 8 (church->natural (parse-lambda-term "λf x.f(f(f(f(f(f(f(f x)))))))")))
+  (is = 11 (church->natural (parse-lambda-term "λf x.f(f(f(f(f(f(f(f(f(f(f x))))))))))"))))
 
 (define-test barendregt-numerals-test
   :depends-on (parse-combinator-term-test)
@@ -306,12 +306,12 @@
   (macrolet ((lambda-program-result (path)
                `(run-lambda-program
                  (asdf:system-relative-pathname
-                  :ski (merge-pathnames #p"tests/programs/" ,path))
+                  :ski (merge-pathnames #p"programs/" ,path))
                  (make-broadcast-stream))))
     (is term-equal (natural->church 120) (lambda-program-result #p"fact.lam"))
-    (is term-equal (natural->church 40) (lambda-program-result #p"aritm.lam"))
+    (is term-equal (natural->church 40) (lambda-program-result #p"arithm.lam"))
     (is term-equal (natural->church 4) (lambda-program-result #p"pred.lam"))
-    (is term-equal (parse-lambda-term "λxy.y") (lambda-program-result #p"basic.lam"))))
+    (is term-equal (parse-lambda-term "λx y.y") (lambda-program-result #p"basic.lam"))))
 
 (define-test combinator-programs-test
   :depends-on (parse-combinator-term-test
@@ -320,8 +320,8 @@
   (macrolet ((combinator-program-result (path)
                `(run-combinator-program
                  (asdf:system-relative-pathname
-                  :ski (merge-pathnames #p"tests/programs/" ,path))
+                  :ski (merge-pathnames #p"programs/" ,path))
                  (make-broadcast-stream))))
     (is term-equal (natural->barendregt 120) (combinator-program-result #p"fact.com"))
-    (is term-equal (natural->barendregt 12) (combinator-program-result #p"aritm.com"))
+    (is term-equal (natural->barendregt 12) (combinator-program-result #p"arithm.com"))
     (is term-equal (get-combinator 'K) (combinator-program-result #p"neg.com"))))

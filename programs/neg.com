@@ -1,6 +1,6 @@
 # -*- mode: fundamental; -*-
 
-@NEG = V(KI)K;
+neg = V(KI)K;
 
-@NEG K;
-@NEG (KI);
+neg K;
+neg (KI);

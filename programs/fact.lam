@@ -1,18 +1,20 @@
-ZERO = λfx.x;
-ONE = λfx.fx;
-TWO = λfx.f(fx);
-THREE = λfx.f(f(fx));
-FOUR = λfx.f(f(f(fx)));
-FIVE = λfx.f(f(f(f(fx))));
+# -*- mode: fundamental; -*-
 
-T = λxy.x;
-F = λxy.y;
-ISZERO = λn.n(T F)T;
-PRED = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
-MULT = λnm.λf.n(mf);
+zero = λf x.x;
+one = λf x.f x;
+two = λf x.f(f x);
+three = λf x.f(f(f x));
+four = λf x.f(f(f(f x)));
+five = λf x.f(f(f(f(f x))));
 
-G = λf.λn.(ISZERO n)(ONE)(MULT n (f (PRED n)));
-Y = (λxy.y(xxy)) (λxy.y(xxy));        # Turing's fixed point combinator.
-FACT = Y G;
+t = λx y.x;
+f = λx y.y;
+iszero = λn.n(t f)t;
+pred = λn.λf.λx.n (λg.λh.h (g f)) (λu.x) (λu.u);
+mult = λn m.λf.n(m f);
 
-FACT FIVE;
+g = λf.λn.(iszero n)(one)(mult n (f (pred n)));
+u = (λx y.y(x x y)) (λx y.y(x x y));        # Turing's fixed point combinator.
+fact = u g;
+
+fact five;

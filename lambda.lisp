@@ -23,7 +23,7 @@
 (defmethod print-object ((object lambda-abstraction) stream)
   (with-slots (variable body) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~a ~a)" variable body))))
+      (format stream "~a ~a" variable body))))
 
 (defmethod print-term ((term lambda-abstraction) &optional (stream *standard-output*))
   (write-char #\λ stream)
@@ -51,7 +51,9 @@ application of the LEFT term to the RIGHT term."
           (write-char #\( stream)
           (print-term left stream)
           (write-char #\) stream))
-        (print-term left stream))
+        (progn
+          (print-term left stream)
+          (write-char #\Space stream)))
     (if (lambda-variable-p right)
         (print-term right stream)
         (progn

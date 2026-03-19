@@ -1,16 +1,18 @@
-TRUE = λxy.x;
-FALSE = λxy.y;
+# -*- mode: fundamental; -*-
 
-PAIR = λxy.λs.sxy;
+true = λx y.x;
+false = λx y.y;
 
-FST = λp.p TRUE;
-SND = λp.p FALSE;
+pair = λx y.λs.s x y;
 
-ZERO = λfx.x;
-SUCC = λn.λfx.f(nfx);
+fst = λp.p true;
+snd = λp.p false;
 
-SHIFT = λx.PAIR (SND x) (SUCC (SND x));
+zero = λf x.x;
+succ = λn.λf x.f(n f x);
 
-PRED = λn.FST (n SHIFT (PAIR ZERO ZERO));
+shift = λx.pair (snd x) (succ (snd x));
 
-PRED (SUCC (SUCC (SUCC (SUCC (SUCC ZERO)))));
+pred = λn.fst (n shift (pair zero zero));
+
+pred (succ (succ (succ (succ (succ zero)))));

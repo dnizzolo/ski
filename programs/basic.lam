@@ -1,9 +1,11 @@
-TRUE = λxy.x;
-FALSE = λxy.y;
-ISZERO = λn.n(TRUE FALSE)TRUE;
+# -*- mode: fundamental; -*-
 
-ZERO = λfx.x;
-ONE = λfx.fx;
-TWO = λfx.f(fx);
+true = λx y.x;
+false = λx y.y;
+iszero = λn.n(true false)true;
 
-ISZERO ONE;
+zero = λf x.x;
+one = λf x.f x;
+two = λf x.f(f x);
+
+iszero one;

@@ -21,9 +21,9 @@
   (typep object 'combinator))
 
 (defmethod print-object ((object combinator) stream)
-  (with-slots (name) object
+  (with-slots (name arity) object
     (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~a)" name))))
+      (format stream "~a/~d" name arity))))
 
 (defclass combinator-application (application combinator-term) ()
   (:documentation "An application of combinatory logic terms."))
@@ -55,12 +55,10 @@ application of the LEFT term to the RIGHT term."
 (defmethod term-equal ((term1 combinator) (term2 combinator))
   (eql term1 term2))
 
-(defmethod term-equal ((term1 combinator-variable)
-                       (term2 combinator-variable))
+(defmethod term-equal ((term1 combinator-variable) (term2 combinator-variable))
   (same-variable-p term1 term2))
 
-(defmethod term-equal ((term1 combinator-application)
-                       (term2 combinator-application))
+(defmethod term-equal ((term1 combinator-application) (term2 combinator-application))
   (with-accessors ((left1 left) (right1 right)) term1
     (with-accessors ((left2 left) (right2 right)) term2
       (and (term-equal left1 left2) (term-equal right1 right2)))))
@@ -77,7 +75,9 @@ application of the LEFT term to the RIGHT term."
           (write-char #\( stream)
           (print-term right stream)
           (write-char #\) stream))
-        (print-term right stream)))
+        (progn
+          (write-char #\Space stream)
+          (print-term right stream))))
   term)
 
 (defmethod occurs-free-p ((variable variable) (term combinator))

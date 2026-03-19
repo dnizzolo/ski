@@ -57,7 +57,5 @@
    #:lambda->sk
    #:parse-combinator-term
    #:parse-lambda-term
-   ;; #:build-lambda-program
-   ;; #:run-lambda-program
-   ;; #:run-combinator-program
-   ))
+   #:run-lambda-program
+   #:run-combinator-program))

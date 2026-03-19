@@ -36,10 +36,8 @@
       (princ name stream))))
 
 (defmethod print-term ((term variable) &optional (stream *standard-output*))
-  (with-accessors ((name name)) term
-    (if (> (length name) 1)
-        (format stream "{~a}" name)
-        (princ name stream)))
+  (with-slots (name) term
+    (princ name stream))
   term)
 
 (defun variable->symbol (variable)
@@ -58,11 +56,8 @@
   "Return the next variable name from GENERATOR."
   (with-slots (state) generator
     (if (integerp state)
-        (prog1 (format nil "_~d" state)
-          (incf state))
-        (shiftf state (if (char= state #\z)
-                          0
-                          (code-char (1+ (char-code state))))))))
+        (prog1 (format nil "_~d" state) (incf state))
+        (shiftf state (if (char= state #\z) 0 (code-char (1+ (char-code state))))))))
 
 (defgeneric same-variable-p (variable1 variable2)
   (:documentation "Return true if VARIABLE1 and VARIABLE2 have the same name, and NIL

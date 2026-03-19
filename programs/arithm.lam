@@ -1,0 +1,15 @@
+# -*- mode: fundamental; -*-
+
+zero = λf x.x;
+one = λf x.f x;
+two = λf x.f(f x);
+four = λf x.f(f(f(f x)));
+
+succ = λn.λf x.f(n f x);
+add = λn m.λf x.n f(m f x);
+mult = λn m.λf.n(m f);
+
+succ two;
+succ four;
+mult two four;
+mult(mult(two)(four))(succ(four));
