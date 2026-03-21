@@ -5,11 +5,9 @@
 (in-package #:ex-11-25)
 
 (defun solve ()
-  (do ((finch-p (make-extensional-equality-predicate (get-combinator 'F)))
-       (allowed (list (get-combinator 'E) (get-combinator 'T)))
-       (n 1 (1+ n)))
-      (())
-    (let ((result (search-n-terms allowed n finch-p)))
-      (when result
-        (report-terms result)
-        (return)))))
+  (loop with finch-p = (make-extensional-equality-predicate (get-combinator 'F))
+        with allowed = (list (get-combinator 'E) (get-combinator 'T))
+        for n from 1
+        for terms = (search-n-terms allowed n finch-p)
+        until terms
+        finally (report-terms terms)))

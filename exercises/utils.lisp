@@ -11,25 +11,26 @@
 
 (in-package #:ex-utils)
 
-(defun report-terms (terms)
-  "Display to standard output each term in the list TERMS."
-  (format t "~&Got ~d term~:p." (length terms))
-  (dolist (term terms)
-    (fresh-line)
-    (print-term term))
-  (values))
+(defun report-terms (terms &optional (stream *standard-output*))
+  "Display to standard output each term in TERMS."
+  (format stream "~&Got ~d term~:p." (length terms))
+  (map nil
+       (lambda (term)
+         (fresh-line stream)
+         (print-term term stream))
+       terms))
 
-(defun full-binary-trees (n &key leaf (node #'make-combinator-application))
+(defun full-binary-trees (n &key leaf (make-node #'make-combinator-application))
   "Return a list of all binary trees with N leaves. LEAF is used for all
-the leaves of the trees. NODE is the binary function used to build the
-trees."
+the leaves of the trees. MAKE-NODE is the binary function used to
+build the trees."
   (let ((table (make-array n :initial-element nil)))
     (setf (aref table 0) (list leaf))
     (loop for j from 1 below n do
-      (loop for i from 0 below j do
+      (loop for i below j do
         (loop for left in (aref table i) do
           (loop for right in (aref table (- j i 1)) do
-            (push (funcall node left right)
+            (push (funcall make-node left right)
                   (aref table j))))))
     (aref table (1- n))))
 
@@ -38,9 +39,8 @@ trees."
 SET with length N."
   (loop with result = (list nil)
         repeat n
-        do (setf result
-                 (loop for item in result
-                       nconc (loop for elem in set collect (cons elem item))))
+        do (setf result (loop for item in result
+                              nconc (loop for elem in set collect (cons elem item))))
         finally (return result)))
 
 (defun substitute-nils (object replacements)

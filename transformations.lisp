@@ -165,7 +165,7 @@
 
 (defun goedel->sk (n)
   "Return the SK term denoted by the Gödel number N."
-  (parse-combinator-term
+  (parse-combinator-input
    (nsubstitute
     #\S #\1
     (nsubstitute

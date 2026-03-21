@@ -5,11 +5,9 @@
 (in-package #:ex-12-16)
 
 (defun solve ()
-  (do ((mockingbird-p (make-extensional-equality-predicate (get-combinator 'M)))
-       (allowed (list (get-combinator 'S) (get-combinator 'T)))
-       (n 1 (1+ n)))
-      (())
-    (let ((result (search-n-terms allowed n mockingbird-p)))
-      (when result
-        (report-terms result)
-        (return)))))
+  (loop with mockingbird-p = (make-extensional-equality-predicate (get-combinator 'M))
+        with allowed = (list (get-combinator 'S) (get-combinator 'T))
+        for n from 1
+        for terms = (search-n-terms allowed n mockingbird-p)
+        until terms
+        finally (report-terms terms)))

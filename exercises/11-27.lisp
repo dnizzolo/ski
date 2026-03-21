@@ -5,11 +5,9 @@
 (in-package #:ex-11-27)
 
 (defun solve ()
-  (do ((vireo-p (make-extensional-equality-predicate (get-combinator 'V)))
-       (allowed (list (get-combinator 'C) (get-combinator 'F)))
-       (n 1 (1+ n)))
-      (())
-    (let ((result (search-n-terms allowed n vireo-p)))
-      (when result
-        (report-terms result)
-        (return)))))
+  (loop with vireo-p = (make-extensional-equality-predicate (get-combinator 'V))
+        with allowed = (list (get-combinator 'C) (get-combinator 'F))
+        for n from 1
+        for terms = (search-n-terms allowed n vireo-p)
+        until terms
+        finally (report-terms terms)))

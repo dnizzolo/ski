@@ -5,13 +5,9 @@
 (in-package #:ex-11-10)
 
 (defun solve ()
-  (do ((becard-p (make-extensional-equality-predicate (get-combinator 'B3)))
-       (bluebird (get-combinator 'B))
-       (n 1 (1+ n)))
-      (())
-    (let ((result (remove-if-not
-                   becard-p
-                   (full-binary-trees n :leaf bluebird))))
-      (when result
-        (report-terms result)
-        (return)))))
+  (loop with becard-p = (make-extensional-equality-predicate (get-combinator 'B3))
+        with bluebird = (get-combinator 'B)
+        for n from 1
+        for terms = (remove-if-not becard-p (full-binary-trees n :leaf bluebird))
+        until terms
+        finally (report-terms terms)))

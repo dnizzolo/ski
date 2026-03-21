@@ -55,7 +55,7 @@
    #:combinator->ski
    #:lambda->ski
    #:lambda->sk
-   #:parse-combinator-term
-   #:parse-lambda-term
+   #:parse-combinator-input
+   #:parse-lambda-input
    #:run-lambda-program
    #:run-combinator-program))

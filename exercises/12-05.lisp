@@ -5,11 +5,9 @@
 (in-package #:ex-12-05)
 
 (defun solve ()
-  (do ((converse-warbler-p (make-extensional-equality-predicate (get-combinator 'W1)))
-       (allowed (list (get-combinator 'R) (get-combinator 'M2)))
-       (n 1 (1+ n)))
-      (())
-    (let ((result (search-n-terms allowed n converse-warbler-p)))
-      (when result
-        (report-terms result)
-        (return)))))
+  (loop with converse-warbler-p = (make-extensional-equality-predicate (get-combinator 'W1))
+        with allowed = (list (get-combinator 'R) (get-combinator 'M2))
+        for n from 1
+        for terms = (search-n-terms allowed n converse-warbler-p)
+        until terms
+        finally (report-terms terms)))

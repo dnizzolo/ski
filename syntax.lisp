@@ -1,422 +1,501 @@
 (in-package #:ski)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Common rules.
+(defun extract-line (source line-number)
+  (loop for i from 1
+        for start = 0 then (1+ end)
+        for end = (position #\Newline source :start start)
+        while (and end (< i line-number))
+        finally (return (when (= i line-number)
+                          (subseq source start end)))))
 
-(esrap:defrule whitespace*
-    (* (or #\Space #\Newline #\Tab))
-  (:constant nil))
+(defun latin-lower-case-p (char)
+  (<= #.(char-code #\a) (char-code char) #.(char-code #\z)))
 
-(esrap:defrule variable
-    (and whitespace*
-         (or (esrap:character-ranges (#\a #\z))
-             (and "{"
-                  whitespace*
-                  (+ (esrap:character-ranges (#\a #\z)))
-                  whitespace*
-                  "}"))
-         whitespace*)
-  (:destructure (w1 var w2)
-    (declare (ignore w1 w2))
-    (if (atom var) var (third var))))
+(defclass token ()
+  ((token-type :initarg :token-type :reader token-type)
+   (lexeme :initarg :lexeme :reader lexeme)
+   (line :initarg :line :reader line)
+   (column :initarg :column :reader column)
+   (literal :initarg :literal :reader literal))
+  (:default-initargs
+   :token-type (error "Token type required.")
+   :lexeme (error "Lexeme required.")
+   :line (error "Line required.")
+   :column (error "Column required.")
+   :literal nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Combinatory logic grammar.
+(defun make-token (token-type lexeme line column &optional literal)
+  (make-instance 'token
+                 :token-type token-type
+                 :lexeme lexeme
+                 :line line
+                 :column column
+                 :literal literal))
 
-(esrap:defrule combinator-term
-    (and (esrap:? combinator-term) combinator-factor)
-  (:destructure (left right)
-    (if left
-        (make-combinator-application left right)
-        right)))
+(defmethod print-object ((object token) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-slots (token-type lexeme line column literal) object
+      (format stream "~s ~s~@[ ~a~] At ~d:~d"
+              token-type lexeme literal line column))))
 
-(esrap:defrule combinator-factor
-    (or combinator
-        combinator-variable
-        parenthesized-combinator-term))
+(defgeneric peek (object))
+(defgeneric advance (object))
 
-(defun literal-combinator (text position end)
-  (let ((length-matched 0)
-        (combinator-matched nil))
-    (maphash (lambda (name combinator)
-               (let* ((lexeme (symbol-name name))
-                      (lexeme-length (length lexeme)))
-                 (when (and (> lexeme-length length-matched)
-                            (string= lexeme text
-                                     :start2 position
-                                     :end2 (min end (+ position lexeme-length))))
-                   (setf length-matched lexeme-length
-                         combinator-matched combinator))))
-             *combinators*)
-    (if combinator-matched
-        (values combinator-matched (+ position length-matched) t)
-        (values nil position "Expected a combinator"))))
+(defgeneric scan-token (scanner))
 
-(esrap:defrule combinator
-    (and whitespace*
-         #'literal-combinator
-         whitespace*)
-  (:destructure (w1 combinator w2)
-    (declare (ignore w1 w2))
-    combinator))
+(defclass scanner ()
+  ((source :initarg :source :reader source)
+   (tokens :initform (make-array 0 :adjustable t :fill-pointer t) :reader tokens)
+   (start :initform 0 :accessor start)
+   (current :initform 0 :accessor current)
+   (line :initform 1 :accessor line)
+   (column :initform 0 :accessor column))
+  (:default-initargs
+   :source (error "Source required.")))
 
-(esrap:defrule combinator-variable
-    variable
-  (:function make-combinator-variable))
+(defmethod print-object ((object scanner) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-slots (source tokens start current line column) object
+      (format stream "~s ~a ~a ~a At ~d:~d"
+              source tokens start current line column))))
 
-(esrap:defrule combinator-application
-    (and combinator-term (or combinator combinator-variable combinator-term))
-  (:destructure (left right)
-    (make-combinator-application left right)))
+(define-condition scanner-error (error)
+  ((scanner :initarg :scanner :reader scanner)
+   (message :initarg :message :reader message))
+  (:report report-scanner-error))
 
-(esrap:defrule parenthesized-combinator-term
-    (and whitespace*
-         "("
-         combinator-term
-         ")"
-         whitespace*)
-  (:destructure (w1 open-parenthesis term close-parenthesis w2)
-    (declare (ignore w1 open-parenthesis close-parenthesis w2))
-    term))
+(defun report-scanner-error (condition stream)
+  (with-slots (source line column) (scanner condition)
+    (format stream "~a~%At line ~d, column ~d:~%" (message condition) line column)
+    (format stream "~a~%" (extract-line source line))
+    (format stream "~v@a~%" column #\^)))
 
-(defun parse-combinator-term (input)
-  "Parse a COMBINATOR-TERM from the string INPUT and return it."
-  (esrap:parse 'combinator-term input))
+(defun scanner-error (scanner message)
+  (error 'scanner-error :scanner scanner :message message))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun scanner-in-bounds-p (scanner)
+  (array-in-bounds-p (source scanner) (current scanner)))
+
+(defmethod peek ((object scanner))
+  (char (source object) (current object)))
+
+(defmethod advance ((object scanner))
+  (prog1 (char (source object) (current object))
+    (incf (current object))
+    (incf (column object))))
+
+(defun add-token (scanner token-type &optional literal)
+  (with-slots (source tokens start current line column) scanner
+    (let ((text (subseq source start current)))
+      (vector-push-extend
+       (make-token token-type text line column literal)
+       tokens))))
+
+(defun scan-tokens (scanner)
+  (with-slots (tokens start current column) scanner
+    (if (zerop (length tokens))
+        (loop while (scanner-in-bounds-p scanner)
+              do (scan-token scanner)
+                 (setf start current)
+              finally (add-token scanner :eof)
+                      (return tokens))
+        tokens)))
+
+(defun skip-comment (scanner)
+  (loop until (or (not (scanner-in-bounds-p scanner))
+                  (char= (peek scanner) #\Newline))
+        do (advance scanner)))
+
 ;;;; Lambda calculus grammar.
+;;;;
+;;;; digit = "0" ... "9" ;
+;;;; lower-alpha = "a" ... "z" ;
+;;;; ident = ( lower-alpha | "_" ) ( lower-alpha | "_" | digit )* ;
+;;;; abs = ( "λ" | "/" ) ident+ "." lam ;
+;;;; atom = ident | abs | "(" lam ")" ;
+;;;; lam = atom ( " "+ lam )* ;
+;;;; binding = ident "=" lam ;
+;;;; toplevel = binding | lam ;
+;;;; file = ( toplevel ";" )* ;
 
-(esrap:defrule lambda-term
-    (and (esrap:? lambda-term) lambda-factor)
-  (:destructure (left right)
-    (if left
-        (make-lambda-application left right)
-        right)))
+(defclass lambda-scanner (scanner) ())
 
-(esrap:defrule lambda-factor
-    (or lambda-abstraction
-        lambda-variable
-        parenthesized-lambda-term))
+(defun make-lambda-scanner (source)
+  (make-instance 'lambda-scanner :source source))
 
-(esrap:defrule lambda-abstraction
-    (and whitespace*
-         (or "λ" "@")
-         (+ lambda-variable)
-         "."
-         lambda-term
-         whitespace*)
-  (:destructure (w1 lambda variables dot body w2)
-    (declare (ignore w1 lambda dot w2))
+(defmethod scan-token ((scanner lambda-scanner))
+  (let ((char (advance scanner)))
+    (case char
+      (#\# (skip-comment scanner))
+      ((#\/ #\λ) (add-token scanner :lambda))
+      (#\( (add-token scanner :left-paren))
+      (#\) (add-token scanner :right-paren))
+      (#\. (add-token scanner :dot))
+      (#\; (add-token scanner :semicolon))
+      (#\= (add-token scanner :equal))
+      (#\Newline
+       (incf (line scanner))
+       (setf (column scanner) 0))
+      ((#\Space #\Tab #\Return))
+      (t (if (or (char= char #\_) (latin-lower-case-p char))
+             (scan-identifier scanner char)
+             (scanner-error
+              scanner (format nil "Unexpected character '~a'." char)))))))
+
+(defun scan-identifier (scanner initial-char)
+  (loop with literal = (make-array 1 :adjustable t :fill-pointer t
+                                     :element-type 'character
+                                     :initial-contents (list initial-char))
+        while (scanner-in-bounds-p scanner)
+        for char = (peek scanner)
+        while (or (char= char #\_) (latin-lower-case-p char) (digit-char-p char))
+        do (vector-push-extend char literal)
+           (advance scanner)
+        finally (add-token scanner :identifier literal)))
+
+(defclass parser ()
+  ((tokens :initarg :tokens :reader tokens)
+   (current :initform 0 :accessor current)
+   (source :initarg :source :reader source))
+  (:default-initargs
+   :tokens (error "Tokens required.")
+   :source (error "Source required.")))
+
+(defmethod print-object ((object parser) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-slots (tokens current) object
+      (format stream "~a ~a" tokens current))))
+
+(define-condition parser-error (error)
+  ((parser :initarg :parser :reader parser)
+   (message :initarg :message :reader message))
+  (:report report-parser-error))
+
+(defun report-parser-error (condition stream)
+  (let* ((parser (parser condition))
+         (source (source parser))
+         (token (peek parser))
+         (line (line token)) (column (column token)))
+    (format stream "~a~%At line ~d, column ~d:~%" (message condition) line column)
+    (format stream "~a~%" (extract-line source line))
+    (format stream "~v@a~%" column #\^)))
+
+(defun parser-error (parser message)
+  (error 'parser-error :parser parser :message message))
+
+(defun parser-get (parser index)
+  (with-slots (tokens) parser
+    (when (array-in-bounds-p tokens index)
+      (aref tokens index))))
+
+(defmethod peek ((object parser))
+  (parser-get object (current object)))
+
+(defmethod advance ((object parser))
+  (let ((maybe-token (peek object)))
+    (when maybe-token
+      (prog1 maybe-token
+        (incf (current object))))))
+
+(defun parser-lookahead-p (parser &rest token-types)
+  (loop for expected in token-types
+        for index = (current parser) then (1+ index)
+        for actual = (parser-get parser index)
+        always (and actual (eql (token-type actual) expected))))
+
+(defun parser-match (parser expected)
+  (when (parser-lookahead-p parser expected)
+    (advance parser)))
+
+(defun parser-consume (parser token-type message)
+  (if (parser-lookahead-p parser token-type)
+      (advance parser)
+      (parser-error parser message)))
+
+(defun parse-left-associative-chain (parser parse-atom make-application stop-tokens)
+  (loop with term = (funcall parse-atom parser)
+        until (some (lambda (token-type) (parser-lookahead-p parser token-type)) stop-tokens)
+        for next = (funcall parse-atom parser)
+        do (setf term (funcall make-application term next))
+        finally (return term)))
+
+(defun parse-file (parser parse-toplevel)
+  (loop with toplevels = (make-array 0 :adjustable t :fill-pointer t)
+        until (parser-lookahead-p parser :eof)
+        do (vector-push-extend
+            (prog1 (funcall parse-toplevel parser)
+              (parser-consume parser :semicolon "Expect ';' after toplevel item."))
+            toplevels)
+        finally (return toplevels)))
+
+(defclass lambda-parser (parser) ())
+
+(defun make-lambda-parser (tokens source)
+  (make-instance 'lambda-parser :tokens tokens :source source))
+
+(defun parse-lambda-abstraction (parser)
+  (let ((variables
+          (loop
+            collect (make-lambda-variable
+                     (literal
+                      (parser-consume
+                       parser :identifier "Expect identifier after lambda.")))
+            until (parser-match parser :dot)))
+        (body (parse-lambda-term parser)))
     (reduce #'make-lambda-abstraction
             variables
-            :from-end t
-            :initial-value body)))
+            :initial-value body
+            :from-end t)))
 
-(esrap:defrule lambda-variable
-    variable
-  (:function make-lambda-variable))
+(defun parse-lambda-atom (parser)
+  (cond
+    ((parser-match parser :lambda)
+     (parse-lambda-abstraction parser))
+    ((parser-match parser :left-paren)
+     (prog1 (parse-lambda-term parser)
+       (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
+    ((parser-lookahead-p parser :identifier)
+     (make-lambda-variable (literal (advance parser))))
+    (t
+     (parser-error parser "Expect either an abstraction, an application or a variable."))))
 
-(esrap:defrule parenthesized-lambda-term
-    (and whitespace*
-         "("
-         lambda-term
-         ")"
-         whitespace*)
-  (:destructure (w1 open-parenthesis term close-parenthesis w2)
-    (declare (ignore w1 open-parenthesis close-parenthesis w2))
-    term))
+(defun parse-lambda-term (parser)
+  (parse-left-associative-chain
+   parser #'parse-lambda-atom #'make-lambda-application
+   '(:eof :right-paren :semicolon)))
 
-(defun parse-lambda-term (input)
-  "Parse a LAMBDA-TERM from the string INPUT and return it."
-  (esrap:parse 'lambda-term input))
+(defun parse-lambda-binding (parser)
+  (let ((name (prog1 (advance parser) (advance parser))))
+    (make-lambda-binding (literal name) (parse-lambda-term parser))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Common utilities for programs.
+(defun parse-lambda-toplevel (parser)
+  (if (parser-lookahead-p parser :identifier :equal)
+      (parse-lambda-binding parser)
+      (parse-lambda-term parser)))
 
-(defgeneric read-program (source)
-  (:documentation "Read a program from SOURCE, skipping comments. Comments are identified
-with the # character and they extend to the end of the line."))
+(defun parse-lambda-file (parser)
+  (parse-file parser #'parse-lambda-toplevel))
 
-(defmethod read-program ((source stream))
-  (with-output-to-string (sink)
-    (loop
-      (let ((char (read-char source nil)))
-        (cond ((null char) (return))
-              ((char= char #\#)
-               (unread-char char source)
-               (read-line source)
-               (write-char #\Newline sink))
-              (t (write-char char sink)))))))
+(defun parse-lambda-input (source)
+  (let* ((scanner (make-lambda-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-lambda-parser tokens source)))
+    (prog1 (parse-lambda-toplevel parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
 
-(defmethod read-program ((source string))
-  (read-program (make-string-input-stream source)))
+(defclass lambda-binding ()
+  ((name :initarg :name :reader name)
+   (term :initarg :term :reader term))
+  (:default-initargs
+   :name (error "Name required.")
+   :term (error "Term required.")))
 
-(defmethod read-program ((source pathname))
-  (read-program (open source)))
+(defun make-lambda-binding (name term)
+  (make-instance 'lambda-binding :name name :term term))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Lambda calculus programs.
+(defun lambda-binding-p (object)
+  (typep object 'lambda-binding))
 
-(defvar *lambda-program-definitions* nil
-  "The definitions in a lambda program to keep track of as we parse it in
-order to resolve references to definitions in terms.")
+(defmethod print-object ((object lambda-binding) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-slots (name term) object
+      (format stream "~a ~a" name term))))
 
-(esrap:defrule lambda-program
-    (and (* lambda-program-definition)
-         (+ (and lambda-program-term ";" whitespace*)))
-  (:destructure (definitions exprs)
-    (declare (ignore definitions))
-    (mapcar #'first exprs)))
+(defun run-lambda-program (file &optional (stream *standard-output*))
+  (let* ((source (uiop:read-file-string file))
+         (scanner (make-lambda-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-lambda-parser tokens source))
+         (toplevels (parse-lambda-file parser))
+         (terms (remove-if #'lambda-binding-p toplevels))
+         (bindings (remove-if-not #'lambda-binding-p toplevels)))
+    (loop for i from (1- (length bindings)) downto 0
+          for binding = (aref bindings i)
+          for var = (make-lambda-variable (name binding))
+          for sub = (term binding)
+          do (map-into terms (lambda (term) (substitute-avoiding-capture term var sub)) terms))
+    (loop with last
+          for term across terms
+          do (setf last (reduce-term term))
+             (fresh-line stream)
+             (print-term last stream)
+          finally (return last))))
 
-(esrap:defrule lambda-program-definition-name
-    (and whitespace*
-         (+ (esrap:character-ranges (#\A #\Z)))
-         whitespace*)
-  (:text t))
+;;;; Combinatory logic grammar.
+;;;;
+;;;; digit = "0" ... "9" ;
+;;;; lower-alpha = "a" ... "z" ;
+;;;; ident = ( lower-alpha | "_" ) ( lower-alpha | "_" | digit )* ;
+;;;; combinator = any string that's the name of some symbol in *combinators*
+;;;; atom = ident | combinator | "(" comb ")" ;
+;;;; comb = atom ( " "+ comb )* ;
+;;;; binding = ident parameters "=" comb ;
+;;;; parameters = ident* ;
+;;;; toplevel = binding | comb ;
+;;;; file = ( toplevel ";" )* ;
 
-;; When a name appears in term context we must check that it was
-;; previously defined, in which case we return the corresponding pure
-;; lambda calculus term, otherwise an error is signaled.
-(esrap:defrule lambda-program-definition-as-term
-    lambda-program-definition-name
-  (:lambda (name)
-    (loop for definition in *lambda-program-definitions*
-          when (string= name (name definition))
-            return (term definition)
-          finally (error "Undefined term ~a in lambda program." name))))
+(defclass combinator-scanner (scanner) ())
 
-(esrap:defrule lambda-program-definition
-    (and whitespace*
-         lambda-program-definition-name
-         whitespace*
-         "="
-         whitespace*
-         lambda-program-term
-         whitespace*
-         ";"
-         whitespace*)
-  (:destructure (w1 name w2 eq w3 expr w4 semicolon w5)
-    (declare (ignore w1 w2 eq w3 w4 semicolon w5))
-    (push (make-lambda-program-definition name expr)
-          *lambda-program-definitions*)))
+(defun make-combinator-scanner (source)
+  (make-instance 'combinator-scanner :source source))
 
-(esrap:defrule lambda-program-term
-    (and (esrap:? lambda-program-term) lambda-program-factor)
-  (:destructure (left right)
-    (if left
-        (make-lambda-application left right)
-        right)))
+(defmethod scan-token ((scanner combinator-scanner))
+  (let ((char (advance scanner)))
+    (case char
+      (#\# (skip-comment scanner))
+      (#\( (add-token scanner :left-paren))
+      (#\) (add-token scanner :right-paren))
+      (#\; (add-token scanner :semicolon))
+      (#\= (add-token scanner :equal))
+      (#\Newline
+       (incf (line scanner))
+       (setf (column scanner) 0))
+      ((#\Space #\Tab #\Return))
+      (t (cond
+           ((or (char= char #\_) (latin-lower-case-p char))
+            (scan-identifier scanner char))
+           ((scan-combinator scanner))
+           (t
+            (scanner-error
+             scanner (format nil "Unexpected character '~a'." char))))))))
 
-(esrap:defrule lambda-program-factor
-    (or lambda-program-abstraction
-        lambda-variable
-        lambda-program-definition-as-term
-        parenthesized-lambda-program-term))
+(defun scan-combinator (scanner)
+  (with-slots (source current) scanner
+    (loop with source-length = (length source)
+          with matched-length = 0
+          with matched-comb
+          initially (decf current)
+          for symb being the hash-keys of *combinators* using (hash-value comb)
+          for name = (symbol-name symb)
+          for length = (length name)
+          when (and (> length matched-length)
+                    (>= (- source-length current) length)
+                    (string= source name :start1 current :end1 (+ current length)))
+            do (setf matched-length length
+                     matched-comb comb)
+          finally (return (when matched-comb
+                            (incf current matched-length)
+                            (incf (column scanner) (1- matched-length))
+                            (add-token scanner :combinator matched-comb))))))
 
-(esrap:defrule lambda-program-abstraction
-    (and whitespace*
-         (or "λ" "@")
-         (+ lambda-variable)
-         "."
-         lambda-program-term
-         whitespace*)
-  (:destructure (w1 lambda variables dot body w2)
-    (declare (ignore w1 lambda dot w2))
-    (reduce #'make-lambda-abstraction
-            variables
-            :from-end t
-            :initial-value body)))
+(defclass combinator-parser (parser) ())
 
-(esrap:defrule parenthesized-lambda-program-term
-    (and whitespace*
-         "("
-         lambda-program-term
-         ")"
-         whitespace*)
-  (:destructure (w1 open-parenthesis term close-parenthesis w2)
-    (declare (ignore w1 open-parenthesis close-parenthesis w2))
-    term))
+(defun make-combinator-parser (tokens source)
+  (make-instance 'combinator-parser :tokens tokens :source source))
 
-(defclass lambda-program-definition (lambda-term)
-  ((name :initarg :name :accessor name)
-   (term :initarg :term :accessor term))
-  (:documentation "A lambda calculus term defined in a program."))
+(defun parse-combinator-atom (parser)
+  (cond
+    ((parser-lookahead-p parser :combinator)
+     (literal (advance parser)))
+    ((parser-match parser :left-paren)
+     (prog1 (parse-combinator-term parser)
+       (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
+    ((parser-lookahead-p parser :identifier)
+     (make-combinator-variable (literal (advance parser))))
+    (t
+     (parser-error parser "Expect either a combinator, an application or a variable."))))
 
-(defun make-lambda-program-definition (name term)
-  "Construct and return a LAMBDA-PROGRAM-DEFINITION called NAME that
- stands for TERM."
-  (make-instance 'lambda-program-definition :name name :term term))
+(defun parse-combinator-term (parser)
+  (parse-left-associative-chain
+   parser #'parse-combinator-atom #'make-combinator-application
+   '(:eof :right-paren :semicolon)))
 
-(defun lambda-program-definition-p (object)
-  "Return true if OBJECT is a LAMBDA-PROGRAM-DEFINITION, and NIL
-otherwise."
-  (typep object 'lambda-program-definition))
-
-(defmethod print-object ((object lambda-program-definition) stream)
-  (with-slots (name) object
-    (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~a)" name))))
-
-(defmethod print-term ((term lambda-program-definition) &optional (stream *standard-output*))
-  (princ (name term) stream))
-
-(defun parse-lambda-program (input)
-  "Parse a lambda program from INPUT."
-  (esrap:parse 'lambda-program (read-program input)))
-
-(defun build-lambda-program (program)
-  "Parse the lambda PROGRAM and return a list of pure lambda calculus
-terms to be reduced."
-  (let ((*lambda-program-definitions* nil))
-    (parse-lambda-program program)))
-
-(defun run-lambda-program (program &optional (stream *standard-output*))
-  "Parse and run the lambda PROGRAM. Return the last reduced term. Print
-each reduced term to STREAM."
-  (let (last)
-    (dolist (expr (build-lambda-program program) last)
-      (setf last (reduce-term expr))
-      (print-term last stream)
-      (terpri stream))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Combinatory logic programs.
-
-(esrap:defrule combinator-program
-    (and (* combinator-program-definition)
-         (+ (and combinator-program-term ";" whitespace*)))
-  (:destructure (definitions exprs)
-    (let ((definitions-table (make-hash-table :test #'equal)))
-      (dolist (def definitions)
-        (setf (gethash (name def) definitions-table) def))
-      (list definitions-table (mapcar #'first exprs)))))
-
-(esrap:defrule combinator-name
-    (and whitespace*
-         "@"
-         (+ (esrap:character-ranges (#\A #\Z)))
-         whitespace*)
-  (:destructure (w1 at name w2)
-    (declare (ignore w1 at w2))
-    (make-combinator-program-definition
-     (coerce name 'string)
-     nil
-     nil)))
-
-(esrap:defrule combinator-program-definition
-    (and whitespace*
-         combinator-name
-         (* combinator-variable)
-         "="
-         whitespace*
-         combinator-program-term
-         whitespace*
-         ";"
-         whitespace*)
-  (:destructure (w1 name vars eq w2 expr w3 semicolon w4)
-    (declare (ignore w1 eq w2 w3 semicolon w4))
-    (make-combinator-program-definition
-     (name name)
+(defun parse-combinator-binding (parser)
+  (let ((name (parser-consume parser :identifier "Expect combinator binding name."))
+        (vars (loop until (parser-match parser :equal)
+                    for name = (parser-consume parser :identifier "Expect variable name.")
+                    collect (intern (string-upcase (literal name)))))
+        (body (parse-combinator-term parser)))
+    (make-combinator-binding
+     (literal name)
      (length vars)
-     (compile nil (expand-operation vars expr)))))
+     (compile nil (expand-operation vars body)))))
 
-(esrap:defrule combinator-program-term
-    (and (esrap:? combinator-program-term) combinator-program-factor)
-  (:destructure (left right)
-    (if left
-        (make-combinator-application left right)
-        right)))
+(defun parse-combinator-toplevel (parser)
+  (with-slots (tokens current) parser
+    (let ((end (position :semicolon tokens :start current :key #'token-type)))
+      (if (find :equal tokens :start current :end end :key #'token-type)
+          (parse-combinator-binding parser)
+          (parse-combinator-term parser)))))
 
-(esrap:defrule combinator-program-factor
-    (or combinator
-        combinator-variable
-        combinator-name
-        parenthesized-combinator-program-term))
+(defun parse-combinator-file (parser)
+  (parse-file parser #'parse-combinator-toplevel))
 
-(esrap:defrule parenthesized-combinator-program-term
-    (and whitespace*
-         "("
-         combinator-program-term
-         ")"
-         whitespace*)
-  (:destructure (w1 open-parenthesis term close-parenthesis w2)
-    (declare (ignore w1 open-parenthesis close-parenthesis w2))
-    term))
+(defun parse-combinator-input (source)
+  (let* ((scanner (make-combinator-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-combinator-parser tokens source)))
+    (prog1 (parse-combinator-toplevel parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
 
-(defclass combinator-program-definition (combinator-term)
-  ((name :initarg :name :accessor name)
-   (arity :initarg :arity :accessor arity)
-   (operation :initarg :operation :accessor operation))
-  (:documentation "A combinatory logic term defined in a program."))
+(defclass combinator-binding ()
+  ((name :initarg :name :reader name)
+   (arity :initarg :arity :reader arity)
+   (operation :initarg :operation :reader operation))
+  (:default-initargs
+   :name (error "Name required.")
+   :arity (error "Arity required.")
+   :operation (error "Operation required.")))
 
-(defun make-combinator-program-definition (name arity operation)
-  "Construct and return a COMBINATOR-PROGRAM-DEFINITION that refers to
- NAME has ARITY and performs OPERATION."
-  (make-instance 'combinator-program-definition
+(defun make-combinator-binding (name arity operation)
+  (make-instance 'combinator-binding
                  :name name
                  :arity arity
                  :operation operation))
 
-(defun combinator-program-definition-p (object)
-  "Return true if OBJECT is a COMBINATOR-PROGRAM-DEFINITION, and NIL
-otherwise."
-  (typep object 'combinator-program-definition))
+(defun combinator-binding-p (object)
+  (typep object 'combinator-binding))
 
-(defmethod print-object ((object combinator-program-definition) stream)
-  (with-slots (name) object
-    (print-unreadable-object (object stream :type t :identity t)
-      (format stream "(~a)" name))))
-
-(defmethod print-term ((term combinator-program-definition) &optional (stream *standard-output*))
-  (format stream "@~a" (name term))
-  term)
+(defmethod print-object ((object combinator-binding) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (with-slots (name arity) object
+      (format stream "~a/~d" name arity))))
 
 (defun expand-operation (variables expr)
   "Compute the lambda form that implements the operation of a combinator
-definition."
+binding."
   (labels ((operation-form (term)
              (etypecase term
                (combinator-variable
-                (if (member term variables :test #'same-variable-p)
-                    (variable->symbol term)
-                    term))
+                (or (find (variable->symbol term) variables) term))
                (combinator-application
                 `(make-combinator-application
                   ,(operation-form (left term))
                   ,(operation-form (right term))))
-               (combinator-term term))))
-    (let ((stack-variable (gensym))
-          (let-variables (mapcar #'variable->symbol variables)))
+               (combinator-term
+                term))))
+    (let ((arity (length variables))
+          (stack-variable (gensym)))
       `(lambda (,stack-variable)
-         (let ,(expand-bindings-for-stack-access let-variables stack-variable)
-           (declare (ignorable ,@let-variables))
-           (values ,(operation-form expr)
-                   (nthcdr ,(length variables) ,stack-variable)))))))
+         (when (<= ,arity (length ,stack-variable))
+           (let ,(expand-bindings-for-stack-access variables stack-variable)
+             (declare (ignorable ,@variables))
+             (values ,(operation-form expr)
+                     (nthcdr ,arity ,stack-variable))))))))
 
-(defvar *combinator-program-definitions* nil
-  "The table of defined combinatory logic terms in a combinator
- program to be consulted when running the program.")
+(defvar *combinator-bindings*)
 
-(defmethod step-combinator-term ((term combinator-program-definition) (stack list))
-  (let ((definition (gethash (name term) *combinator-program-definitions*)))
-    (cond ((null definition)
-           (error "Undefined term ~a in combinator program." term))
-          ((<= (arity definition) (length stack))
-           (funcall (operation definition) stack))
-          (t (call-next-method)))))
+(defmethod step-combinator-term :around ((term combinator-variable) (stack list))
+  (if (boundp '*combinator-bindings*)
+      (multiple-value-bind (binding found-p) (gethash (name term) *combinator-bindings*)
+        (if found-p (funcall (operation binding) stack) (call-next-method)))
+      (call-next-method)))
 
-(defun parse-combinator-program (input)
-  "Parse a combinator program from INPUT."
-  (esrap:parse 'combinator-program (read-program input)))
-
-(defun run-combinator-program (program &optional (stream *standard-output*))
-  "Parse and run the combinator PROGRAM. Return the last reduced term. Print
-each reduced term to STREAM."
-  (destructuring-bind (definitions expressions)
-      (parse-combinator-program program)
-    (let ((*combinator-program-definitions* definitions)
-          last)
-      (dolist (expr expressions last)
-        (setf last (reduce-term expr))
-        (print-term last stream)
-        (terpri stream)))))
+(defun run-combinator-program (file &optional (stream *standard-output*))
+  (let* ((source (uiop:read-file-string file))
+         (scanner (make-combinator-scanner source))
+         (tokens (scan-tokens scanner))
+         (parser (make-combinator-parser tokens source))
+         (toplevels (parse-combinator-file parser))
+         (terms (remove-if #'combinator-binding-p toplevels))
+         (*combinator-bindings*
+           (loop with table = (make-hash-table :test #'equal)
+                 for binding across (remove-if-not #'combinator-binding-p toplevels)
+                 do (setf (gethash (name binding) table) binding)
+                 finally (return table))))
+    (loop with last
+          for term across terms
+          do (setf last (reduce-term term))
+             (fresh-line stream)
+             (print-term last stream)
+          finally (return last))))
