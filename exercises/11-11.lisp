@@ -8,6 +8,6 @@
   (loop with dovekie-p = (make-extensional-equality-predicate (get-combinator 'D2))
         with bluebird = (get-combinator 'B)
         for n from 1
-        for terms = (remove-if-not dovekie-p (full-binary-trees n :leaf bluebird))
+        for terms = (delete-if-not dovekie-p (full-binary-trees n :leaf bluebird))
         until terms
         finally (report-terms terms)))

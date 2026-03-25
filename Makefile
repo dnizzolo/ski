@@ -3,7 +3,7 @@ LISP := sbcl
 ski: base.lisp combinators.lisp lambda.lisp main.lisp package.lisp syntax.lisp transformations.lisp ski.asd
 	$(LISP) --eval '(asdf:load-system :ski)' \
 		--eval '(in-package :ski)' \
-		--eval "(sb-ext:save-lisp-and-die #p\"ski\" :toplevel #'toplevel :executable t)"
+		--eval "(sb-ext:save-lisp-and-die #p\"ski\" :toplevel #'main :executable t)"
 
 .PHONY: clean
 clean:

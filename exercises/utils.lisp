@@ -55,8 +55,7 @@ SET with length N."
                     replacements-after-right))))
       (if (null object)
           (if (null replacements)
-              (error "Cannot substitute ~a because there are no more replacements."
-                     object)
+              (error "Cannot substitute ~a because there are no more replacements." object)
               (values (first replacements) (rest replacements)))
           (values object replacements))))
 

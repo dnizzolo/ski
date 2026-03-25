@@ -8,6 +8,6 @@
   (loop with blackbird-p = (make-extensional-equality-predicate (get-combinator 'B1))
         with bluebird = (get-combinator 'B)
         for n from 1
-        for terms = (remove-if-not blackbird-p (full-binary-trees n :leaf bluebird))
+        for terms = (delete-if-not blackbird-p (full-binary-trees n :leaf bluebird))
         until terms
         finally (report-terms terms)))

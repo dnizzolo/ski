@@ -307,19 +307,3 @@ true if a step took place and NIL otherwise."))
       (unless stepped
         (return term))
       (setf term new-term))))
-
-(defun lambda-driver-loop ()
-  "A REPL for lambda calculus."
-  (flet ((prompt-for-input ()
-           (format t "~&%%% ")
-           (finish-output)
-           (read-line t nil))
-         (drive (input)
-           (print-term (reduce-term (parse-lambda-input input)))))
-    (loop
-      (let ((input (prompt-for-input)))
-        (cond ((null input) (return))
-              ((zerop (length input)))
-              (t (handler-case (drive input)
-                   (parser-error ()
-                     (format t "~&Parse error")))))))))

@@ -301,26 +301,6 @@
     (with-slots (name term) object
       (format stream "~a ~a" name term))))
 
-(defun run-lambda-program (file &optional (stream *standard-output*))
-  (let* ((source (uiop:read-file-string file))
-         (scanner (make-lambda-scanner source))
-         (tokens (scan-tokens scanner))
-         (parser (make-lambda-parser tokens source))
-         (toplevels (parse-lambda-file parser))
-         (terms (remove-if #'lambda-binding-p toplevels))
-         (bindings (remove-if-not #'lambda-binding-p toplevels)))
-    (loop for i from (1- (length bindings)) downto 0
-          for binding = (aref bindings i)
-          for var = (make-lambda-variable (name binding))
-          for sub = (term binding)
-          do (map-into terms (lambda (term) (substitute-avoiding-capture term var sub)) terms))
-    (loop with last
-          for term across terms
-          do (setf last (reduce-term term))
-             (fresh-line stream)
-             (print-term last stream)
-          finally (return last))))
-
 ;;;; Combinatory logic grammar.
 ;;;;
 ;;;; digit = "0" ... "9" ;
@@ -480,22 +460,3 @@ binding."
       (multiple-value-bind (binding found-p) (gethash (name term) *combinator-bindings*)
         (if found-p (funcall (operation binding) stack) (call-next-method)))
       (call-next-method)))
-
-(defun run-combinator-program (file &optional (stream *standard-output*))
-  (let* ((source (uiop:read-file-string file))
-         (scanner (make-combinator-scanner source))
-         (tokens (scan-tokens scanner))
-         (parser (make-combinator-parser tokens source))
-         (toplevels (parse-combinator-file parser))
-         (terms (remove-if #'combinator-binding-p toplevels))
-         (*combinator-bindings*
-           (loop with table = (make-hash-table :test #'equal)
-                 for binding across (remove-if-not #'combinator-binding-p toplevels)
-                 do (setf (gethash (name binding) table) binding)
-                 finally (return table))))
-    (loop with last
-          for term across terms
-          do (setf last (reduce-term term))
-             (fresh-line stream)
-             (print-term last stream)
-          finally (return last))))

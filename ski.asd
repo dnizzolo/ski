@@ -13,6 +13,7 @@
                (:file "lambda")
                (:file "transformations")
                (:file "syntax")
+               (:file "interaction")
                (:file "main")
                (:module "exercises"
                 :components ((:file "utils")

@@ -108,26 +108,9 @@ terms. Return the new term and the new stack as multiple values."))
         (setf curr-term next-term
               curr-stack next-stack)))
     (dolist (stacked curr-stack)
-      (setf curr-term (make-combinator-application
-                       curr-term
-                       (reduce-term stacked))))
+      (setf curr-term
+            (make-combinator-application curr-term (reduce-term stacked))))
     curr-term))
-
-(defun combinator-driver-loop ()
-  "A REPL for combinatory logic."
-  (flet ((prompt-for-input ()
-           (format t "~&%%% ")
-           (finish-output)
-           (read-line t nil))
-         (drive (input)
-           (print-term (reduce-term (parse-combinator-input input)))))
-    (loop
-      (let ((input (prompt-for-input)))
-        (cond ((null input) (return))
-              ((zerop (length input)))
-              (t (handler-case (drive input)
-                   (parser-error ()
-                     (format t "~&Parse error")))))))))
 
 (defvar *combinators* (make-hash-table)
   "The table of interned combinators.")
@@ -135,11 +118,8 @@ terms. Return the new term and the new stack as multiple values."))
 (defun get-combinator (name)
   "Return the combinator called NAME, or signal an error if it isn't
 found."
-  (multiple-value-bind (value found)
-      (gethash name *combinators*)
-    (if found
-        value
-        (error "Unknown combinator ~a." name))))
+  (multiple-value-bind (value found-p) (gethash name *combinators*)
+    (if found-p value (error "Unknown combinator ~a." name))))
 
 (defun intern-combinator (combinator)
   "Store COMBINATOR in the table of interned combinators."
