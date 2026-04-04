@@ -20,9 +20,9 @@ Available subcommands:
       (case argc
         (1 (let ((subcommand (first argv)))
              (cond ((string= subcommand "lambda-repl")
-                    (lambda-driver-loop))
+                    (run-lambda-repl))
                    ((string= subcommand "combinator-repl")
-                    (combinator-driver-loop))
+                    (run-combinator-repl))
                    (t (print-help-and-exit)))))
         (2 (let ((subcommand (first argv))
                  (operand (second argv)))

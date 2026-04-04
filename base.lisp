@@ -33,11 +33,11 @@
 (defmethod print-object ((object variable) stream)
   (with-slots (name) object
     (print-unreadable-object (object stream :type t :identity t)
-      (princ name stream))))
+      (write-string name stream))))
 
 (defmethod print-term ((term variable) &optional (stream *standard-output*))
   (with-slots (name) term
-    (princ name stream))
+    (write-string name stream))
   term)
 
 (defun variable->symbol (variable)
@@ -69,6 +69,9 @@ otherwise."))
 (defclass application ()
   ((left :initarg :left :accessor left)
    (right :initarg :right :accessor right))
+  (:default-initargs
+   :left (error "Left required.")
+   :right (error "Right required."))
   (:documentation "The base class for an application."))
 
 (defun application-p (object)

@@ -1,16 +1,5 @@
 (in-package #:ski)
 
-(defun extract-line (source line-number)
-  (loop for i from 1
-        for start = 0 then (1+ end)
-        for end = (position #\Newline source :start start)
-        while (and end (< i line-number))
-        finally (return (when (= i line-number)
-                          (subseq source start end)))))
-
-(defun latin-lower-case-p (char)
-  (<= #.(char-code #\a) (char-code char) #.(char-code #\z)))
-
 (defclass token ()
   ((token-type :initarg :token-type :reader token-type)
    (lexeme :initarg :lexeme :reader lexeme)
@@ -22,9 +11,12 @@
    :lexeme (error "Lexeme required.")
    :line (error "Line required.")
    :column (error "Column required.")
-   :literal nil))
+   :literal nil)
+  (:documentation "A token produced by a scanner, to be used by a parser."))
 
 (defun make-token (token-type lexeme line column &optional literal)
+  "Construct and return a TOKEN of type TOKEN-TYPE with LEXEME, LINE,
+COLUMN and LITERAL."
   (make-instance 'token
                  :token-type token-type
                  :lexeme lexeme
@@ -136,7 +128,7 @@
       (#\Newline
        (incf (line scanner))
        (setf (column scanner) 0))
-      ((#\Space #\Tab #\Return))
+      ((#\Space #\Tab #\Return #\Page #\Vt #\No-break_space))
       (t (if (or (char= char #\_) (latin-lower-case-p char))
              (scan-identifier scanner char)
              (scanner-error
@@ -241,7 +233,7 @@
                       (parser-consume
                        parser :identifier "Expect identifier after lambda.")))
             until (parser-match parser :dot)))
-        (body (parse-lambda-term parser)))
+        (body (parse-lambda-chain parser)))
     (reduce #'make-lambda-abstraction
             variables
             :initial-value body
@@ -252,34 +244,43 @@
     ((parser-match parser :lambda)
      (parse-lambda-abstraction parser))
     ((parser-match parser :left-paren)
-     (prog1 (parse-lambda-term parser)
+     (prog1 (parse-lambda-chain parser)
        (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
     ((parser-lookahead-p parser :identifier)
      (make-lambda-variable (literal (advance parser))))
     (t
      (parser-error parser "Expect either an abstraction, an application or a variable."))))
 
-(defun parse-lambda-term (parser)
+(defun parse-lambda-chain (parser)
   (parse-left-associative-chain
    parser #'parse-lambda-atom #'make-lambda-application
    '(:eof :right-paren :semicolon)))
 
 (defun parse-lambda-binding (parser)
   (let ((name (prog1 (advance parser) (advance parser))))
-    (make-lambda-binding (literal name) (parse-lambda-term parser))))
+    (make-lambda-binding (literal name) (parse-lambda-chain parser))))
 
 (defun parse-lambda-toplevel (parser)
   (if (parser-lookahead-p parser :identifier :equal)
       (parse-lambda-binding parser)
-      (parse-lambda-term parser)))
+      (parse-lambda-chain parser)))
 
-(defun parse-lambda-file (parser)
-  (parse-file parser #'parse-lambda-toplevel))
+(defun parse-lambda-term (source)
+  "Parse a LAMBDA-TERM from the string SOURCE and return it."
+  (let* ((scanner (make-lambda-scanner source))
+         (parser (make-lambda-parser (scan-tokens scanner) source)))
+    (prog1 (parse-lambda-chain parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
+
+(defun parse-lambda-file (file)
+  (let* ((source (uiop:read-file-string file))
+         (scanner (make-lambda-scanner source))
+         (parser (make-lambda-parser (scan-tokens scanner) source)))
+    (parse-file parser #'parse-lambda-toplevel)))
 
 (defun parse-lambda-input (source)
   (let* ((scanner (make-lambda-scanner source))
-         (tokens (scan-tokens scanner))
-         (parser (make-lambda-parser tokens source)))
+         (parser (make-lambda-parser (scan-tokens scanner) source)))
     (prog1 (parse-lambda-toplevel parser)
       (parser-consume parser :eof "Leftover input at the end."))))
 
@@ -294,12 +295,19 @@
   (make-instance 'lambda-binding :name name :term term))
 
 (defun lambda-binding-p (object)
+  "Return true if OBJECT is a LAMBDA-BINDING, and NIL otherwise."
   (typep object 'lambda-binding))
 
 (defmethod print-object ((object lambda-binding) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (with-slots (name term) object
       (format stream "~a ~a" name term))))
+
+(defmethod print-term ((object lambda-binding) &optional (stream *standard-output*))
+  (write-string (name object) stream)
+  (write-string " = " stream)
+  (print-term (term object) stream)
+  object)
 
 ;;;; Combinatory logic grammar.
 ;;;;
@@ -330,7 +338,7 @@
       (#\Newline
        (incf (line scanner))
        (setf (column scanner) 0))
-      ((#\Space #\Tab #\Return))
+      ((#\Space #\Tab #\Return #\Page #\Vt #\No-break_space))
       (t (cond
            ((or (char= char #\_) (latin-lower-case-p char))
             (scan-identifier scanner char))
@@ -368,14 +376,14 @@
     ((parser-lookahead-p parser :combinator)
      (literal (advance parser)))
     ((parser-match parser :left-paren)
-     (prog1 (parse-combinator-term parser)
+     (prog1 (parse-combinator-chain parser)
        (parser-consume parser :right-paren "Expect ')' after parenthesized expression.")))
     ((parser-lookahead-p parser :identifier)
      (make-combinator-variable (literal (advance parser))))
     (t
      (parser-error parser "Expect either a combinator, an application or a variable."))))
 
-(defun parse-combinator-term (parser)
+(defun parse-combinator-chain (parser)
   (parse-left-associative-chain
    parser #'parse-combinator-atom #'make-combinator-application
    '(:eof :right-paren :semicolon)))
@@ -385,51 +393,76 @@
         (vars (loop until (parser-match parser :equal)
                     for name = (parser-consume parser :identifier "Expect variable name.")
                     collect (intern (string-upcase (literal name)))))
-        (body (parse-combinator-term parser)))
-    (make-combinator-binding
-     (literal name)
-     (length vars)
-     (compile nil (expand-operation vars body)))))
+        (body (parse-combinator-chain parser)))
+    (make-combinator-binding (literal name) vars body)))
 
 (defun parse-combinator-toplevel (parser)
   (with-slots (tokens current) parser
     (let ((end (position :semicolon tokens :start current :key #'token-type)))
       (if (find :equal tokens :start current :end end :key #'token-type)
           (parse-combinator-binding parser)
-          (parse-combinator-term parser)))))
+          (parse-combinator-chain parser)))))
 
-(defun parse-combinator-file (parser)
-  (parse-file parser #'parse-combinator-toplevel))
+(defun parse-combinator-term (source)
+  "Parse a COMBINATOR-TERM from the string SOURCE and return it."
+  (let* ((scanner (make-combinator-scanner source))
+         (parser (make-combinator-parser (scan-tokens scanner) source)))
+    (prog1 (parse-combinator-chain parser)
+      (parser-consume parser :eof "Leftover input at the end."))))
+
+(defun parse-combinator-file (file)
+  (let* ((source (uiop:read-file-string file))
+         (scanner (make-combinator-scanner source))
+         (parser (make-combinator-parser (scan-tokens scanner) source)))
+    (parse-file parser #'parse-combinator-toplevel)))
 
 (defun parse-combinator-input (source)
   (let* ((scanner (make-combinator-scanner source))
-         (tokens (scan-tokens scanner))
-         (parser (make-combinator-parser tokens source)))
+         (parser (make-combinator-parser (scan-tokens scanner) source)))
     (prog1 (parse-combinator-toplevel parser)
       (parser-consume parser :eof "Leftover input at the end."))))
 
 (defclass combinator-binding ()
   ((name :initarg :name :reader name)
-   (arity :initarg :arity :reader arity)
-   (operation :initarg :operation :reader operation))
+   (parameters :initarg :parameters :reader parameters)
+   (body :initarg :body :reader body)
+   (arity :reader arity)
+   (operation :reader operation))
   (:default-initargs
    :name (error "Name required.")
-   :arity (error "Arity required.")
-   :operation (error "Operation required.")))
+   :parameters (error "Parameters required.")
+   :body (error "Body required.")))
 
-(defun make-combinator-binding (name arity operation)
+(defmethod initialize-instance :after ((object combinator-binding) &key)
+  (with-slots (parameters body arity operation) object
+    (setf arity (length parameters)
+          operation (compile nil (expand-operation parameters body)))
+    (map-into parameters (lambda (p) (string-downcase (string p))) parameters)))
+
+(defun make-combinator-binding (name parameters body)
   (make-instance 'combinator-binding
                  :name name
-                 :arity arity
-                 :operation operation))
+                 :parameters parameters
+                 :body body))
 
 (defun combinator-binding-p (object)
+  "Return true if OBJECT is a COMBINATOR-BINDING, and NIL otherwise."
   (typep object 'combinator-binding))
 
 (defmethod print-object ((object combinator-binding) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (with-slots (name arity) object
       (format stream "~a/~d" name arity))))
+
+(defmethod print-term ((object combinator-binding) &optional (stream *standard-output*))
+  (write-string (name object) stream)
+  (loop for param in (parameters object)
+        do (write-char #\Space stream)
+           (write-string param stream)
+        finally (write-char #\Space stream))
+  (write-string "= " stream)
+  (print-term (body object) stream)
+  object)
 
 (defun expand-operation (variables expr)
   "Compute the lambda form that implements the operation of a combinator
@@ -452,11 +485,3 @@ binding."
              (declare (ignorable ,@variables))
              (values ,(operation-form expr)
                      (nthcdr ,arity ,stack-variable))))))))
-
-(defvar *combinator-bindings*)
-
-(defmethod step-combinator-term :around ((term combinator-variable) (stack list))
-  (if (boundp '*combinator-bindings*)
-      (multiple-value-bind (binding found-p) (gethash (name term) *combinator-bindings*)
-        (if found-p (funcall (operation binding) stack) (call-next-method)))
-      (call-next-method)))
