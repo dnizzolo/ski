@@ -10,6 +10,9 @@
 (defclass combinator (combinator-term)
   ((name :initarg :name :accessor name)
    (arity :initarg :arity :accessor arity))
+  (:default-initargs
+   :name "Name required."
+   :arity "Arity required.")
   (:documentation "A combinator in combinatory logic."))
 
 (defun make-combinator (name arity)

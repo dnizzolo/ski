@@ -8,6 +8,7 @@
   :bug-tracker "https://github.com/dnizzolo/ski/issues"
   :serial t
   :components ((:file "package")
+               (:file "utils")
                (:file "base")
                (:file "combinators")
                (:file "lambda")
@@ -32,8 +33,8 @@
                              (:file "12-16-01")
                              (:file "12-16-07")))
                (:module "programs"
-                :components ((:static-file "aritm.com")
-                             (:static-file "aritm.lam")
+                :components ((:static-file "arithm.com")
+                             (:static-file "arithm.lam")
                              (:static-file "basic.lam")
                              (:static-file "fact.com")
                              (:static-file "fact.lam")
@@ -54,8 +55,8 @@
   :bug-tracker "https://github.com/dnizzolo/ski/issues"
   :depends-on ("ski" "parachute")
   :components ((:module "programs"
-                :components ((:static-file "aritm.com")
-                             (:static-file "aritm.lam")
+                :components ((:static-file "arithm.com")
+                             (:static-file "arithm.lam")
                              (:static-file "basic.lam")
                              (:static-file "fact.com")
                              (:static-file "fact.lam")

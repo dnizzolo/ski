@@ -29,7 +29,6 @@
    #:combinator-application-p
    #:make-combinator-variable
    #:combinator-variable-p
-   #:combinator-driver-loop
    #:lambda-term
    #:lambda-term-p
    #:make-lambda-abstraction
@@ -44,7 +43,6 @@
    #:lambda-combinator-p
    #:*lambda-reduction-strategy*
    #:substitute-avoiding-capture
-   #:lambda-driver-loop
    #:sk->goedel
    #:goedel->sk
    #:natural->church
@@ -55,7 +53,9 @@
    #:combinator->ski
    #:lambda->ski
    #:lambda->sk
-   #:parse-combinator-input
-   #:parse-lambda-input
+   #:parse-combinator-term
+   #:parse-lambda-term
    #:run-lambda-program
-   #:run-combinator-program))
+   #:run-combinator-program
+   #:run-lambda-repl
+   #:run-combinator-repl))

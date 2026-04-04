@@ -10,6 +10,9 @@
 (defclass lambda-abstraction (lambda-term)
   ((variable :initarg :variable :accessor variable)
    (body :initarg :body :accessor body))
+  (:default-initargs
+   :variable "Variable required."
+   :body "Body required.")
   (:documentation "A lambda abstraction in lambda calculus."))
 
 (defun make-lambda-abstraction (variable body)
